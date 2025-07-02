@@ -43,19 +43,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (session?.user) {
           // Check if user is admin
-          setTimeout(async () => {
-            try {
-              const { data: roles } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', session.user.id)
-                .single();
-              
-              setIsAdmin(roles?.role === 'admin');
-            } catch (error) {
-              setIsAdmin(false);
-            }
-          }, 0);
+          try {
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id);
+            
+            setIsAdmin(roles?.some(r => r.role === 'admin') || false);
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            setIsAdmin(false);
+          }
         } else {
           setIsAdmin(false);
         }

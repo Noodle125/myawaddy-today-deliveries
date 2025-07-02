@@ -3,7 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Navbar from "@/components/Navbar";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -11,15 +14,25 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            {/* TODO: Add remaining routes */}
+            <Route path="/shop" element={<div className="p-8 text-center">Shop Page - Coming Soon</div>} />
+            <Route path="/food" element={<div className="p-8 text-center">Food Page - Coming Soon</div>} />
+            <Route path="/car-order" element={<div className="p-8 text-center">Car Order Page - Coming Soon</div>} />
+            <Route path="/rewards" element={<div className="p-8 text-center">Rewards Page - Coming Soon</div>} />
+            <Route path="/profile" element={<div className="p-8 text-center">Profile Page - Coming Soon</div>} />
+            <Route path="/dashboard" element={<div className="p-8 text-center">Admin Dashboard - Coming Soon</div>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

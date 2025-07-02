@@ -8,6 +8,8 @@ import Navbar from "@/components/Navbar";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Shop from "./pages/Shop";
+import Food from "./pages/Food";
+import CarOrder from "./pages/CarOrder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,8 +27,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             {/* TODO: Add remaining routes */}
             <Route path="/shop" element={<Shop />} />
-            <Route path="/food" element={<div className="p-8 text-center">Food Page - Coming Soon</div>} />
-            <Route path="/car-order" element={<div className="p-8 text-center">Car Order Page - Coming Soon</div>} />
+            <Route path="/food" element={<Food />} />
+            <Route path="/car-order" element={<CarOrder />} />
             <Route path="/rewards" element={<div className="p-8 text-center">Rewards Page - Coming Soon</div>} />
             <Route path="/profile" element={<div className="p-8 text-center">Profile Page - Coming Soon</div>} />
             <Route path="/dashboard" element={<div className="p-8 text-center">Admin Dashboard - Coming Soon</div>} />

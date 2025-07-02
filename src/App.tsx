@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Shop from "./pages/Shop";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +24,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             {/* TODO: Add remaining routes */}
-            <Route path="/shop" element={<div className="p-8 text-center">Shop Page - Coming Soon</div>} />
+            <Route path="/shop" element={<Shop />} />
             <Route path="/food" element={<div className="p-8 text-center">Food Page - Coming Soon</div>} />
             <Route path="/car-order" element={<div className="p-8 text-center">Car Order Page - Coming Soon</div>} />
             <Route path="/rewards" element={<div className="p-8 text-center">Rewards Page - Coming Soon</div>} />

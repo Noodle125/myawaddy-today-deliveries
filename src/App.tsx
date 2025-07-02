@@ -11,6 +11,7 @@ import Shop from "./pages/Shop";
 import Food from "./pages/Food";
 import CarOrder from "./pages/CarOrder";
 import Profile from "./pages/Profile";
+import Rewards from "./pages/Rewards";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,7 +31,7 @@ const App = () => (
             <Route path="/shop" element={<Shop />} />
             <Route path="/food" element={<Food />} />
             <Route path="/car-order" element={<CarOrder />} />
-            <Route path="/rewards" element={<div className="p-8 text-center">Rewards Page - Coming Soon</div>} />
+            <Route path="/rewards" element={<Rewards />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<div className="p-8 text-center">Admin Dashboard - Coming Soon</div>} />
             <Route path="*" element={<NotFound />} />

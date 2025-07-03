@@ -290,7 +290,12 @@ const AdminDashboard = () => {
   if (!user || !isAdmin) {
     return (
       <div className="container mx-auto py-8 text-center">
-        <p className="text-muted-foreground">Access denied. Admin privileges required.</p>
+        <div className="bg-destructive/10 border border-destructive rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Access Denied</h2>
+          <p className="text-muted-foreground mb-4">Admin privileges required to access this dashboard.</p>
+          {!user && <p className="text-sm text-muted-foreground">You are not logged in.</p>}
+          {user && !isAdmin && <p className="text-sm text-muted-foreground">Your account does not have admin privileges.</p>}
+        </div>
       </div>
     );
   }

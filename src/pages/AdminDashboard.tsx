@@ -20,8 +20,11 @@ import {
   Code,
   TrendingUp,
   UserPlus,
-  Package
+  Package,
+  Plus,
+  FolderPlus
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface DashboardStats {
   totalUsers: number;
@@ -82,6 +85,17 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [newCodeType, setNewCodeType] = useState('');
   const [newCodeCount, setNewCodeCount] = useState(1);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryType, setNewCategoryType] = useState('food');
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    description: '',
+    price: '',
+    image_url: '',
+    category_id: '',
+    type: 'food'
+  });
 
   useEffect(() => {
     if (user && isAdmin) {
@@ -170,6 +184,16 @@ const AdminDashboard = () => {
 
       if (codesData) {
         setCodes(codesData);
+      }
+
+      // Fetch categories
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (categoriesData) {
+        setCategories(categoriesData);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -267,6 +291,91 @@ const AdminDashboard = () => {
       toast({
         title: "Update Failed",
         description: "Failed to update product status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a category name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name: newCategoryName,
+          type: newCategoryType,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Category Created",
+        description: `Category "${newCategoryName}" has been created successfully.`,
+      });
+
+      setNewCategoryName('');
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create category.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createProduct = async () => {
+    if (!newProduct.name.trim() || !newProduct.price || !newProduct.category_id) {
+      toast({
+        title: "Invalid Input",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .insert({
+          name: newProduct.name,
+          description: newProduct.description,
+          price: parseFloat(newProduct.price),
+          image_url: newProduct.image_url,
+          category_id: newProduct.category_id,
+          type: newProduct.type,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Product Created",
+        description: `Product "${newProduct.name}" has been created successfully.`,
+      });
+
+      setNewProduct({
+        name: '',
+        description: '',
+        price: '',
+        image_url: '',
+        category_id: '',
+        type: 'food'
+      });
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create product.",
         variant: "destructive",
       });
     }
@@ -391,7 +500,7 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Users
@@ -403,6 +512,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             Products
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="flex items-center gap-2">
+            <FolderPlus className="h-4 w-4" />
+            Categories
           </TabsTrigger>
           <TabsTrigger value="codes" className="flex items-center gap-2">
             <Code className="h-4 w-4" />
@@ -485,7 +598,91 @@ const AdminDashboard = () => {
         <TabsContent value="products" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Products</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Add New Product
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Product Name</Label>
+                  <Input
+                    placeholder="e.g., Black Coffee"
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select 
+                    value={newProduct.category_id} 
+                    onValueChange={(value) => setNewProduct({...newProduct, category_id: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name} ({category.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select 
+                    value={newProduct.type} 
+                    onValueChange={(value) => setNewProduct({...newProduct, type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="food">Food</SelectItem>
+                      <SelectItem value="beverage">Beverage</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  placeholder="Product description..."
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Image URL</Label>
+                <Input
+                  placeholder="https://example.com/image.jpg"
+                  value={newProduct.image_url}
+                  onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
+                />
+              </div>
+              <Button onClick={createProduct} className="w-full">
+                Create Product
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Existing Products</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -508,6 +705,69 @@ const AdminDashboard = () => {
                         {product.is_active ? "Active" : "Inactive"}
                       </Button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="categories" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Add New Category
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Category Name</Label>
+                  <Input
+                    placeholder="e.g., Breakfast"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select value={newCategoryType} onValueChange={setNewCategoryType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="food">Food</SelectItem>
+                      <SelectItem value="beverage">Beverage</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>&nbsp;</Label>
+                  <Button onClick={createCategory} className="w-full">
+                    Create Category
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Existing Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categories.map((category) => (
+                  <div key={category.id} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">{category.name}</h3>
+                      <Badge variant="outline">{category.type}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Created {new Date(category.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 ))}
               </div>

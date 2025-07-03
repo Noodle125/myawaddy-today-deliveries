@@ -1,30 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Users, 
-  ShoppingBag, 
-  Car, 
-  Gift, 
-  BarChart3, 
-  Settings, 
-  FileText,
-  Code,
-  TrendingUp,
-  UserPlus,
-  Package,
-  Plus,
-  FolderPlus
-} from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { Settings, Users, ShoppingBag, Package, FolderPlus, Code, BarChart3 } from 'lucide-react';
+
+// Import refactored components
+import { DashboardStatsComponent } from '@/components/admin/DashboardStats';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { OrderManagement } from '@/components/admin/OrderManagement';
+import { ProductManagement } from '@/components/admin/ProductManagement';
+import { CategoryManagement } from '@/components/admin/CategoryManagement';
+import { CodeManagement } from '@/components/admin/CodeManagement';
+import { Analytics } from '@/components/admin/Analytics';
 
 interface DashboardStats {
   totalUsers: number;
@@ -67,6 +55,13 @@ interface CashbackCode {
   created_at: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  type: string;
+  created_at: string;
+}
+
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
@@ -82,20 +77,8 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [codes, setCodes] = useState<CashbackCode[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newCodeType, setNewCodeType] = useState('');
-  const [newCodeCount, setNewCodeCount] = useState(1);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryType, setNewCategoryType] = useState('food');
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    image_url: '',
-    category_id: '',
-    type: 'food'
-  });
 
   useEffect(() => {
     if (user && isAdmin) {
@@ -227,8 +210,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const generateCashbackCodes = async () => {
-    if (!newCodeType || newCodeCount < 1) {
+  const generateCashbackCodes = async (codeType: string, codeCount: number) => {
+    if (!codeType || codeCount < 1) {
       toast({
         title: "Invalid Input",
         description: "Please enter a valid code type and count.",
@@ -239,11 +222,11 @@ const AdminDashboard = () => {
 
     try {
       const codes = [];
-      for (let i = 0; i < newCodeCount; i++) {
-        const code = `${newCodeType.toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      for (let i = 0; i < codeCount; i++) {
+        const code = `${codeType.toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
         codes.push({
           code,
-          type: newCodeType,
+          type: codeType,
         });
       }
 
@@ -255,11 +238,9 @@ const AdminDashboard = () => {
 
       toast({
         title: "Codes Generated",
-        description: `Successfully generated ${newCodeCount} cashback codes.`,
+        description: `Successfully generated ${codeCount} cashback codes.`,
       });
 
-      setNewCodeType('');
-      setNewCodeCount(1);
       fetchDashboardData();
     } catch (error) {
       console.error('Error generating codes:', error);
@@ -296,8 +277,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const createCategory = async () => {
-    if (!newCategoryName.trim()) {
+  const createCategory = async (name: string, type: string) => {
+    if (!name.trim()) {
       toast({
         title: "Invalid Input",
         description: "Please enter a category name.",
@@ -310,18 +291,17 @@ const AdminDashboard = () => {
       const { error } = await supabase
         .from('categories')
         .insert({
-          name: newCategoryName,
-          type: newCategoryType,
+          name,
+          type,
         });
 
       if (error) throw error;
 
       toast({
         title: "Category Created",
-        description: `Category "${newCategoryName}" has been created successfully.`,
+        description: `Category "${name}" has been created successfully.`,
       });
 
-      setNewCategoryName('');
       fetchDashboardData();
     } catch (error) {
       console.error('Error creating category:', error);
@@ -333,8 +313,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const createProduct = async () => {
-    if (!newProduct.name.trim() || !newProduct.price || !newProduct.category_id) {
+  const createProduct = async (productData: any) => {
+    if (!productData.name.trim() || !productData.price || !productData.category_id) {
       toast({
         title: "Invalid Input",
         description: "Please fill in all required fields.",
@@ -347,29 +327,21 @@ const AdminDashboard = () => {
       const { error } = await supabase
         .from('products')
         .insert({
-          name: newProduct.name,
-          description: newProduct.description,
-          price: parseFloat(newProduct.price),
-          image_url: newProduct.image_url,
-          category_id: newProduct.category_id,
-          type: newProduct.type,
+          name: productData.name,
+          description: productData.description,
+          price: parseFloat(productData.price),
+          image_url: productData.image_url,
+          category_id: productData.category_id,
+          type: productData.type,
         });
 
       if (error) throw error;
 
       toast({
         title: "Product Created",
-        description: `Product "${newProduct.name}" has been created successfully.`,
+        description: `Product "${productData.name}" has been created successfully.`,
       });
 
-      setNewProduct({
-        name: '',
-        description: '',
-        price: '',
-        image_url: '',
-        category_id: '',
-        type: 'food'
-      });
       fetchDashboardData();
     } catch (error) {
       console.error('Error creating product:', error);
@@ -416,88 +388,7 @@ const AdminDashboard = () => {
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Registered users
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.pendingOrders} pending
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Car Orders</CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCarOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              Total car bookings
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              Available products
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Rewards</CardTitle>
-            <Gift className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeRewards}</div>
-            <p className="text-xs text-muted-foreground">
-              In progress rewards
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${orders.reduce((sum, order) => sum + Number(order.total_amount), 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Recent orders total
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <DashboardStatsComponent stats={stats} orders={orders} />
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-6">
@@ -528,356 +419,38 @@ const AdminDashboard = () => {
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Users</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{user.username}</p>
-                      <p className="text-sm text-muted-foreground">User ID: {user.id.slice(0, 8)}...</p>
-                      <p className="text-xs text-muted-foreground">
-                        Joined {new Date(user.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">user</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <UserManagement users={users} />
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {orders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{order.order_type}</p>
-                      <p className="text-sm text-muted-foreground">
-                        User ID: {order.user_id.slice(0, 8)}...
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">${order.total_amount}</p>
-                      <Select
-                        value={order.status}
-                        onValueChange={(value) => updateOrderStatus(order.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="processing">Processing</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <OrderManagement orders={orders} onUpdateOrderStatus={updateOrderStatus} />
         </TabsContent>
 
         <TabsContent value="products" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Add New Product
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Product Name</Label>
-                  <Input
-                    placeholder="e.g., Black Coffee"
-                    value={newProduct.name}
-                    onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Price ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newProduct.price}
-                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select 
-                    value={newProduct.category_id} 
-                    onValueChange={(value) => setNewProduct({...newProduct, category_id: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name} ({category.type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select 
-                    value={newProduct.type} 
-                    onValueChange={(value) => setNewProduct({...newProduct, type: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="food">Food</SelectItem>
-                      <SelectItem value="beverage">Beverage</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  placeholder="Product description..."
-                  value={newProduct.description}
-                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Image URL</Label>
-                <Input
-                  placeholder="https://example.com/image.jpg"
-                  value={newProduct.image_url}
-                  onChange={(e) => setNewProduct({...newProduct, image_url: e.target.value})}
-                />
-              </div>
-              <Button onClick={createProduct} className="w-full">
-                Create Product
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Existing Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {products.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-sm text-muted-foreground">{product.type}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Created {new Date(product.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">${product.price}</p>
-                      <Button
-                        variant={product.is_active ? "default" : "secondary"}
-                        size="sm"
-                        onClick={() => toggleProductStatus(product.id, product.is_active)}
-                      >
-                        {product.is_active ? "Active" : "Inactive"}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <ProductManagement 
+            products={products} 
+            categories={categories}
+            onCreateProduct={createProduct}
+            onToggleProductStatus={toggleProductStatus}
+          />
         </TabsContent>
 
         <TabsContent value="categories" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Add New Category
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Category Name</Label>
-                  <Input
-                    placeholder="e.g., Breakfast"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Type</Label>
-                  <Select value={newCategoryType} onValueChange={setNewCategoryType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="food">Food</SelectItem>
-                      <SelectItem value="beverage">Beverage</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>&nbsp;</Label>
-                  <Button onClick={createCategory} className="w-full">
-                    Create Category
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Existing Categories</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categories.map((category) => (
-                  <div key={category.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">{category.name}</h3>
-                      <Badge variant="outline">{category.type}</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Created {new Date(category.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <CategoryManagement 
+            categories={categories} 
+            onCreateCategory={createCategory}
+          />
         </TabsContent>
 
         <TabsContent value="codes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Generate Cashback Codes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Code Type</Label>
-                  <Input
-                    placeholder="e.g., CASHBACK, REWARD"
-                    value={newCodeType}
-                    onChange={(e) => setNewCodeType(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Count</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={newCodeCount}
-                    onChange={(e) => setNewCodeCount(parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>&nbsp;</Label>
-                  <Button onClick={generateCashbackCodes} className="w-full">
-                    Generate Codes
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Codes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {codes.map((code) => (
-                  <div key={code.id} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant={code.is_used ? "secondary" : "default"}>
-                        {code.type}
-                      </Badge>
-                      {code.is_used && <Badge variant="outline">Used</Badge>}
-                    </div>
-                    <p className="font-mono text-sm">{code.code}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(code.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <CodeManagement 
+            codes={codes} 
+            onGenerateCodes={generateCashbackCodes}
+          />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>System Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium">Order Success Rate</p>
-                    <p className="text-2xl font-bold">
-                      {orders.length > 0 
-                        ? Math.round((orders.filter(o => o.status === 'completed').length / orders.length) * 100)
-                        : 0}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Average Order Value</p>
-                    <p className="text-2xl font-bold">
-                      ${orders.length > 0 
-                        ? (orders.reduce((sum, order) => sum + Number(order.total_amount), 0) / orders.length).toFixed(2)
-                        : '0.00'}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">Order Status Distribution</p>
-                  <div className="space-y-2">
-                    {['pending', 'processing', 'completed', 'cancelled'].map((status) => {
-                      const count = orders.filter(o => o.status === status).length;
-                      const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
-                      return (
-                        <div key={status} className="flex items-center justify-between">
-                          <span className="capitalize">{status}</span>
-                          <span>{count} ({percentage.toFixed(1)}%)</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Analytics orders={orders} />
         </TabsContent>
       </Tabs>
     </div>

@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Settings, Users, ShoppingBag, Package, FolderPlus, Code, BarChart3 } from 'lucide-react';
 
 // Import refactored components
-import { DashboardStatsComponent } from '@/components/admin/DashboardStats';
+import { DashboardStats } from '@/components/admin/DashboardStats';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { OrderManagement } from '@/components/admin/OrderManagement';
 import { ProductManagement } from '@/components/admin/ProductManagement';
@@ -388,7 +388,7 @@ const AdminDashboard = () => {
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
 
-      <DashboardStatsComponent stats={stats} orders={orders} />
+      <DashboardStats stats={stats} orders={orders} />
 
       <Tabs defaultValue="users" className="w-full">
         <TabsList className="grid w-full grid-cols-6">

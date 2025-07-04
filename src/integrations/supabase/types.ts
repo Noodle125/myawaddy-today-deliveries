@@ -66,6 +66,48 @@ export type Database = {
         }
         Relationships: []
       }
+      business_owners: {
+        Row: {
+          business_name: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          telegram_alerts_enabled: boolean | null
+          telegram_bot_token: string | null
+          telegram_chat_id: string | null
+          theme_color: string | null
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          telegram_alerts_enabled?: boolean | null
+          telegram_bot_token?: string | null
+          telegram_chat_id?: string | null
+          theme_color?: string | null
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          telegram_alerts_enabled?: boolean | null
+          telegram_bot_token?: string | null
+          telegram_chat_id?: string | null
+          theme_color?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       car_orders: {
         Row: {
           created_at: string
@@ -376,6 +418,88 @@ export type Database = {
           wpm?: number
         }
         Relationships: []
+      }
+      menu_items: {
+        Row: {
+          business_owner_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          business_owner_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          business_owner_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_business_owner_id_fkey"
+            columns: ["business_owner_id"]
+            isOneToOne: false
+            referencedRelation: "business_owners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_orders: {
+        Row: {
+          business_owner_id: string
+          created_at: string
+          customer_name: string
+          id: string
+          items: Json
+          status: string
+          table_number: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          business_owner_id: string
+          created_at?: string
+          customer_name: string
+          id?: string
+          items: Json
+          status?: string
+          table_number: string
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          business_owner_id?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          items?: Json
+          status?: string
+          table_number?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_orders_business_owner_id_fkey"
+            columns: ["business_owner_id"]
+            isOneToOne: false
+            referencedRelation: "business_owners"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       message_reactions: {
         Row: {

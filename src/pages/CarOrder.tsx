@@ -56,6 +56,28 @@ const CarOrder = () => {
   useEffect(() => {
     if (user) {
       fetchUserOrders();
+      
+      // Set up realtime subscription for car orders
+      const channel = supabase
+        .channel('user-car-orders')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'car_orders',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Car order updated:', payload);
+            fetchUserOrders(); // Refresh orders when status changes
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

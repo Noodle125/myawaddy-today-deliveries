@@ -83,6 +83,27 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (user && isAdmin) {
       fetchDashboardData();
+      
+      // Set up realtime subscription for orders
+      const channel = supabase
+        .channel('admin-orders')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders'
+          },
+          (payload) => {
+            console.log('Order change:', payload);
+            fetchDashboardData(); // Refresh dashboard data when orders change
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user, isAdmin]);
 
@@ -129,23 +150,51 @@ const AdminDashboard = () => {
         setUsers(usersData);
       }
 
-      // Fetch recent orders
-      const { data: ordersData } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          order_type,
-          status,
-          total_amount,
-          created_at,
-          user_id
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // Fetch recent orders (including car orders converted to orders format)
+      const [ordersResult, carOrdersResult] = await Promise.all([
+        supabase
+          .from('orders')
+          .select(`
+            id,
+            order_type,
+            status,
+            total_amount,
+            created_at,
+            user_id
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('car_orders')
+          .select(`
+            id,
+            status,
+            price,
+            created_at,
+            user_id,
+            from_location,
+            to_location
+          `)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      ]);
 
-      if (ordersData) {
-        setOrders(ordersData);
-      }
+      // Combine regular orders and car orders
+      const allOrders = [
+        ...(ordersResult.data || []),
+        ...(carOrdersResult.data || []).map(carOrder => ({
+          id: carOrder.id,
+          order_type: 'car',
+          status: carOrder.status,
+          total_amount: carOrder.price,
+          created_at: carOrder.created_at,
+          user_id: carOrder.user_id,
+          from_location: carOrder.from_location,
+          to_location: carOrder.to_location
+        }))
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setOrders(allOrders);
 
       // Fetch products
       const { data: productsData } = await supabase
@@ -187,8 +236,14 @@ const AdminDashboard = () => {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      // Find the order to determine if it's a car order or regular order
+      const order = orders.find(o => o.id === orderId);
+      if (!order) throw new Error('Order not found');
+
+      const tableName = order.order_type === 'car' ? 'car_orders' : 'orders';
+      
       const { error } = await supabase
-        .from('orders')
+        .from(tableName)
         .update({ status: newStatus })
         .eq('id', orderId);
 

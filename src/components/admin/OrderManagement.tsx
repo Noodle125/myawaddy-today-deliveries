@@ -26,7 +26,12 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
           {orders.map((order) => (
             <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
               <div>
-                <p className="font-medium">{order.order_type}</p>
+                <p className="font-medium">
+                  {order.order_type === 'car' 
+                    ? `Car: ${(order as any).from_location} → ${(order as any).to_location}`
+                    : order.order_type
+                  }
+                </p>
                 <p className="text-sm text-muted-foreground">
                   User ID: {order.user_id.slice(0, 8)}...
                 </p>

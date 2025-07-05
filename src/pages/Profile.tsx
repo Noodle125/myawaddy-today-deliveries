@@ -36,6 +36,17 @@ interface Order {
   status: string;
   total_amount: number;
   created_at: string;
+  order_items: {
+    id: string;
+    quantity: number;
+    price: number;
+    product: {
+      id: string;
+      name: string;
+      image_url: string | null;
+      type: string;
+    };
+  }[];
 }
 
 interface CarOrder {
@@ -91,10 +102,27 @@ const Profile = () => {
         setUserInfo(userInfoData);
       }
 
-      // Fetch orders
+      // Fetch orders with product details
       const { data: ordersData } = await supabase
         .from('orders')
-        .select('id, order_type, status, total_amount, created_at')
+        .select(`
+          id, 
+          order_type, 
+          status, 
+          total_amount, 
+          created_at,
+          order_items (
+            id,
+            quantity,
+            price,
+            product:products (
+              id,
+              name,
+              image_url,
+              type
+            )
+          )
+        `)
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -241,47 +269,52 @@ const Profile = () => {
                     onChange={(e) => setProfile(prev => prev ? {...prev, display_name: e.target.value} : null)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={userInfo?.username || ''}
-                    onChange={(e) => setUserInfo(prev => prev ? {...prev, username: e.target.value} : null)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={profile?.phone_number || ''}
-                    onChange={(e) => setProfile(prev => prev ? {...prev, phone_number: e.target.value} : null)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telegram">Telegram Username</Label>
-                  <Input
-                    id="telegram"
-                    value={profile?.telegram_username || ''}
-                    onChange={(e) => setProfile(prev => prev ? {...prev, telegram_username: e.target.value} : null)}
-                  />
-                </div>
                  <div className="space-y-2">
-                   <Label htmlFor="age">Age</Label>
+                   <Label htmlFor="username">Username</Label>
                    <Input
-                     id="age"
-                     type="number"
-                     value={userInfo?.age?.toString() || ''}
-                     onChange={(e) => setUserInfo(prev => prev ? {...prev, age: e.target.value ? parseInt(e.target.value) : null} : null)}
+                     id="username"
+                     value={userInfo?.username || ''}
+                     onChange={(e) => setUserInfo(prev => prev ? {...prev, username: e.target.value} : null)}
+                     placeholder="Enter your username"
                    />
                  </div>
                  <div className="space-y-2">
-                   <Label htmlFor="gender">Gender</Label>
+                   <Label htmlFor="phone">Phone Number</Label>
                    <Input
-                     id="gender"
-                     value={userInfo?.gender || ''}
-                     onChange={(e) => setUserInfo(prev => prev ? {...prev, gender: e.target.value || null} : null)}
+                     id="phone"
+                     value={profile?.phone_number || ''}
+                     onChange={(e) => setProfile(prev => prev ? {...prev, phone_number: e.target.value} : null)}
+                     placeholder="Enter your phone number"
                    />
                  </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="telegram">Telegram Username</Label>
+                   <Input
+                     id="telegram"
+                     value={profile?.telegram_username || ''}
+                     onChange={(e) => setProfile(prev => prev ? {...prev, telegram_username: e.target.value} : null)}
+                     placeholder="@username"
+                   />
+                 </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="age">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      value={userInfo?.age?.toString() || ''}
+                      onChange={(e) => setUserInfo(prev => prev ? {...prev, age: e.target.value ? parseInt(e.target.value) : null} : null)}
+                      placeholder="Enter your age"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Input
+                      id="gender"
+                      value={userInfo?.gender || ''}
+                      onChange={(e) => setUserInfo(prev => prev ? {...prev, gender: e.target.value} : null)}
+                      placeholder="Enter your gender"
+                    />
+                  </div>
               </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="bio">Bio</Label>
@@ -312,24 +345,54 @@ const Profile = () => {
               {orders.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No orders found.</p>
               ) : (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
-                      <div>
-                        <p className="font-medium text-foreground capitalize">{order.order_type}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-foreground">${order.total_amount}</p>
-                        <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                          {order.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                 <div className="space-y-4">
+                   {orders.map((order) => (
+                     <div key={order.id} className="border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+                       <div className="flex items-center justify-between p-4 border-b border-border">
+                         <div>
+                           <p className="font-medium text-foreground capitalize">{order.order_type} Order</p>
+                           <p className="text-sm text-muted-foreground">
+                             {new Date(order.created_at).toLocaleDateString()}
+                           </p>
+                         </div>
+                         <div className="text-right">
+                           <p className="font-medium text-foreground">{order.total_amount.toLocaleString()} MMK</p>
+                           <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
+                             {order.status}
+                           </Badge>
+                         </div>
+                       </div>
+                       
+                       {/* Product Details */}
+                       <div className="p-4">
+                         <h4 className="font-medium text-sm text-muted-foreground mb-3">Items Ordered:</h4>
+                         <div className="space-y-3">
+                           {order.order_items?.map((item) => (
+                             <div key={item.id} className="flex items-center gap-3">
+                               <img
+                                 src={item.product.image_url || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
+                                 alt={item.product.name}
+                                 className="w-12 h-12 object-cover rounded-md"
+                               />
+                               <div className="flex-1">
+                                 <p className="font-medium text-sm">{item.product.name}</p>
+                                 <p className="text-xs text-muted-foreground">
+                                   <Badge variant="outline" className="text-xs mr-2">
+                                     {item.product.type}
+                                   </Badge>
+                                   Qty: {item.quantity} × {item.price.toLocaleString()} MMK
+                                 </p>
+                               </div>
+                               <div className="text-right">
+                                 <p className="font-medium text-sm">{(item.price * item.quantity).toLocaleString()} MMK</p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
               )}
             </CardContent>
           </Card>
@@ -369,7 +432,7 @@ const Profile = () => {
                            </div>
                          </div>
                          <div className="text-right">
-                           <p className="font-medium text-foreground text-lg">${carOrder.price}</p>
+                           <p className="font-medium text-foreground text-lg">{carOrder.price.toLocaleString()} MMK</p>
                            <Badge variant={carOrder.status === 'completed' ? 'default' : 'secondary'}>
                              {carOrder.status}
                            </Badge>

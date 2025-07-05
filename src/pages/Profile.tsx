@@ -45,6 +45,10 @@ interface CarOrder {
   status: string;
   price: number;
   created_at: string;
+  name: string;
+  people_count: number;
+  location_type: string;
+  telegram_username: string;
 }
 
 const Profile = () => {
@@ -102,7 +106,7 @@ const Profile = () => {
       // Fetch car orders
       const { data: carOrdersData } = await supabase
         .from('car_orders')
-        .select('id, from_location, to_location, status, price, created_at')
+        .select('id, from_location, to_location, status, price, created_at, name, people_count, location_type, telegram_username')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -261,23 +265,23 @@ const Profile = () => {
                     onChange={(e) => setProfile(prev => prev ? {...prev, telegram_username: e.target.value} : null)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    value={userInfo?.age || ''}
-                    onChange={(e) => setUserInfo(prev => prev ? {...prev, age: parseInt(e.target.value) || null} : null)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Input
-                    id="gender"
-                    value={userInfo?.gender || ''}
-                    onChange={(e) => setUserInfo(prev => prev ? {...prev, gender: e.target.value} : null)}
-                  />
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="age">Age</Label>
+                   <Input
+                     id="age"
+                     type="number"
+                     value={userInfo?.age?.toString() || ''}
+                     onChange={(e) => setUserInfo(prev => prev ? {...prev, age: e.target.value ? parseInt(e.target.value) : null} : null)}
+                   />
+                 </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="gender">Gender</Label>
+                   <Input
+                     id="gender"
+                     value={userInfo?.gender || ''}
+                     onChange={(e) => setUserInfo(prev => prev ? {...prev, gender: e.target.value || null} : null)}
+                   />
+                 </div>
               </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="bio">Bio</Label>
@@ -342,20 +346,36 @@ const Profile = () => {
               ) : (
                 <div className="space-y-4">
                   {carOrders.map((carOrder) => (
-                    <div key={carOrder.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
-                      <div>
-                        <p className="font-medium text-foreground">{carOrder.from_location} → {carOrder.to_location}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(carOrder.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-foreground">${carOrder.price}</p>
-                        <Badge variant={carOrder.status === 'completed' ? 'default' : 'secondary'}>
-                          {carOrder.status}
-                        </Badge>
-                      </div>
-                    </div>
+                     <div key={carOrder.id} className="p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+                       <div className="flex items-start justify-between mb-3">
+                         <div className="flex-1">
+                           <p className="font-medium text-foreground mb-1">{carOrder.from_location} → {carOrder.to_location}</p>
+                           <p className="text-sm text-muted-foreground mb-2">
+                             {new Date(carOrder.created_at).toLocaleDateString()}
+                           </p>
+                           <div className="space-y-1">
+                             <p className="text-sm text-muted-foreground">
+                               <span className="font-medium">Customer:</span> {carOrder.name}
+                             </p>
+                             <p className="text-sm text-muted-foreground">
+                               <span className="font-medium">People:</span> {carOrder.people_count}
+                             </p>
+                             <p className="text-sm text-muted-foreground">
+                               <span className="font-medium">Type:</span> {carOrder.location_type}
+                             </p>
+                             <p className="text-sm text-muted-foreground">
+                               <span className="font-medium">Contact:</span> {carOrder.telegram_username}
+                             </p>
+                           </div>
+                         </div>
+                         <div className="text-right">
+                           <p className="font-medium text-foreground text-lg">${carOrder.price}</p>
+                           <Badge variant={carOrder.status === 'completed' ? 'default' : 'secondary'}>
+                             {carOrder.status}
+                           </Badge>
+                         </div>
+                       </div>
+                     </div>
                   ))}
                 </div>
               )}

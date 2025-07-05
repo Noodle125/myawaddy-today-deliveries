@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Minus, Plus, Trash2, CreditCard } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Minus, Plus, Trash2, CreditCard, MapPin, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,6 +44,9 @@ const Cart = ({
   total
 }: CartProps) => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -64,6 +69,15 @@ const Cart = ({
       return;
     }
 
+    if (!deliveryAddress.trim()) {
+      toast({
+        title: "Delivery address required",
+        description: "Please enter your delivery address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCheckingOut(true);
 
     try {
@@ -74,7 +88,8 @@ const Cart = ({
           user_id: user.id,
           total_amount: total,
           order_type: 'shop',
-          status: 'pending'
+          status: 'pending',
+          delivery_address: deliveryAddress
         })
         .select()
         .single();
@@ -101,6 +116,9 @@ const Cart = ({
       });
 
       onClearCart();
+      setDeliveryAddress('');
+      setSpecialInstructions('');
+      setShowDeliveryForm(false);
       onClose();
     } catch (error: any) {
       console.error('Checkout error:', error);
@@ -219,23 +237,89 @@ const Cart = ({
                   </span>
                 </div>
 
-                <Button
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
-                  className="w-full btn-hero"
-                  size="lg"
-                >
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  {isCheckingOut ? 'Processing...' : 'Checkout'}
-                </Button>
+                {!showDeliveryForm ? (
+                  <Button
+                    onClick={() => setShowDeliveryForm(true)}
+                    className="w-full btn-hero"
+                    size="lg"
+                  >
+                    <CreditCard className="h-5 w-5 mr-2" />
+                    Proceed to Checkout
+                  </Button>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Delivery Information */}
+                    <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+                      <h3 className="font-semibold text-foreground flex items-center">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Delivery Information
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <Label htmlFor="delivery-address" className="text-sm font-medium">
+                            Delivery Address *
+                          </Label>
+                          <Textarea
+                            id="delivery-address"
+                            placeholder="Enter your full delivery address..."
+                            value={deliveryAddress}
+                            onChange={(e) => setDeliveryAddress(e.target.value)}
+                            className="min-h-[60px] mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="special-instructions" className="text-sm font-medium">
+                            Special Instructions
+                          </Label>
+                          <Textarea
+                            id="special-instructions"
+                            placeholder="Any special cooking instructions, allergies, or delivery notes..."
+                            value={specialInstructions}
+                            onChange={(e) => setSpecialInstructions(e.target.value)}
+                            className="min-h-[60px] mt-1"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4 mr-2" />
+                          <span>Estimated delivery time: 30-45 minutes</span>
+                        </div>
+                      </div>
+                    </div>
 
-                <Button
-                  onClick={onClose}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Continue Shopping
-                </Button>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={handleCheckout}
+                        disabled={isCheckingOut}
+                        className="w-full btn-hero"
+                        size="lg"
+                      >
+                        <CreditCard className="h-5 w-5 mr-2" />
+                        {isCheckingOut ? 'Processing...' : 'Place Order'}
+                      </Button>
+                      
+                      <Button
+                        onClick={() => setShowDeliveryForm(false)}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        Back to Cart
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {!showDeliveryForm && (
+                  <Button
+                    onClick={onClose}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Continue Shopping
+                  </Button>
+                )}
               </div>
             </>
           )}

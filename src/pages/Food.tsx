@@ -146,41 +146,6 @@ const Food = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Delivery Info */}
-        <div className="bg-card border border-border rounded-lg p-6 mb-8">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="delivery-address" className="text-base font-medium mb-2 block">
-                <MapPin className="h-4 w-4 inline mr-2" />
-                Delivery Address
-              </Label>
-              <Textarea
-                id="delivery-address"
-                placeholder="Enter your full delivery address..."
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                className="min-h-[80px]"
-              />
-            </div>
-            <div>
-              <Label htmlFor="special-instructions" className="text-base font-medium mb-2 block">
-                Special Instructions
-              </Label>
-              <Textarea
-                id="special-instructions"
-                placeholder="Any special cooking instructions, allergies, or delivery notes..."
-                value={specialInstructions}
-                onChange={(e) => setSpecialInstructions(e.target.value)}
-                className="min-h-[80px]"
-              />
-            </div>
-          </div>
-          
-          <div className="mt-4 flex items-center text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 mr-2" />
-            <span>Estimated delivery time: 30-45 minutes</span>
-          </div>
-        </div>
 
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">

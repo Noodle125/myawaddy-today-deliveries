@@ -6,21 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  type: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  type: string;
-}
+import { Product, Category } from '@/types/admin';
 
 interface ProductManagementProps {
   products: Product[];

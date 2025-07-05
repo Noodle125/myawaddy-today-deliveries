@@ -4,14 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-
-interface CashbackCode {
-  id: string;
-  code: string;
-  type: string;
-  is_used: boolean;
-  created_at: string;
-}
+import { CashbackCode } from '@/types/admin';
 
 interface CodeManagementProps {
   codes: CashbackCode[];

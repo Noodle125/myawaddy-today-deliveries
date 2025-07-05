@@ -2,33 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-
-interface OrderItem {
-  quantity: number;
-  price: number;
-  product_name?: string;
-  product_type?: string;
-}
-
-interface Order {
-  id: string;
-  order_type: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
-  updated_at?: string;
-  user_id: string;
-  delivery_address?: string;
-  // Car order specific fields
-  from_location?: string;
-  to_location?: string;
-  customer_name?: string;
-  telegram_username?: string;
-  people_count?: number;
-  location_type?: string;
-  // Regular order fields
-  items?: OrderItem[];
-}
+import { Order } from '@/types/admin';
 
 interface OrderManagementProps {
   orders: Order[];

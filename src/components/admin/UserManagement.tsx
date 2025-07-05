@@ -2,18 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-interface User {
-  id: string;
-  username: string;
-  created_at: string;
-  display_name?: string;
-  bio?: string;
-  profile_display_name?: string;
-  phone_number?: string;
-  telegram_username?: string;
-  profile_picture_url?: string;
-}
+import { User } from '@/types/admin';
 
 interface UserManagementProps {
   users: User[];

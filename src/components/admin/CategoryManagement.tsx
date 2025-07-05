@@ -6,13 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
-
-interface Category {
-  id: string;
-  name: string;
-  type: string;
-  created_at: string;
-}
+import { Category } from '@/types/admin';
 
 interface CategoryManagementProps {
   categories: Category[];

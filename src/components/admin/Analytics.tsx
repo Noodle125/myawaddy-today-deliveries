@@ -1,13 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface Order {
-  id: string;
-  order_type: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
-  user_id: string;
-}
+import { Order } from '@/types/admin';
 
 interface AnalyticsProps {
   orders: Order[];

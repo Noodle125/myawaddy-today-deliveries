@@ -1,26 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, ShoppingBag, Car, Gift, Package, TrendingUp } from 'lucide-react';
-
-interface DashboardStats {
-  totalUsers: number;
-  totalOrders: number;
-  totalCarOrders: number;
-  totalProducts: number;
-  pendingOrders: number;
-  activeRewards: number;
-}
-
-interface Order {
-  id: string;
-  order_type: string;
-  status: string;
-  total_amount: number;
-  created_at: string;
-  user_id: string;
-}
+import type { DashboardStats as DashboardStatsType, Order } from '@/types/admin';
 
 interface DashboardStatsProps {
-  stats: DashboardStats;
+  stats: DashboardStatsType;
   orders: Order[];
 }
 

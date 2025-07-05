@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Order } from '@/types/admin';
 
@@ -26,24 +25,17 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
         <CardTitle>Recent Orders ({orders.length})</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order Details</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Items/Route</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        {orders.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No orders found</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
             {orders.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+              <div key={order.id} className="border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+                <div className="flex items-center justify-between p-4 border-b border-border">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline" className="text-xs">
                         {order.order_type}
                       </Badge>
@@ -51,106 +43,96 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
                         #{order.id.slice(0, 8)}
                       </span>
                     </div>
+                    <p className="font-medium text-foreground capitalize">{order.order_type} Order</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(order.created_at).toLocaleDateString()} at {new Date(order.created_at).toLocaleTimeString()}
+                    </p>
                     {order.delivery_address && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mt-1">
                         📍 {order.delivery_address}
                       </p>
                     )}
                   </div>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="space-y-1">
-                    {order.order_type === 'car' ? (
-                      <>
-                        <p className="font-medium text-sm">{order.customer_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          @{order.telegram_username}
-                        </p>
-                        {order.people_count && (
-                          <p className="text-xs text-muted-foreground">
-                            👥 {order.people_count} people
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        User: {order.user_id.slice(0, 8)}...
-                      </p>
-                    )}
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  {order.order_type === 'car' ? (
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">
-                        {order.from_location} → {order.to_location}
-                      </p>
-                      <Badge variant="secondary" className="text-xs">
-                        {order.location_type}
-                      </Badge>
+                  <div className="text-right">
+                    <p className="font-medium text-foreground text-lg">{order.total_amount.toLocaleString()} MMK</p>
+                    <Badge variant={getStatusBadgeVariant(order.status)} className="mb-2">
+                      {order.status}
+                    </Badge>
+                    <div>
+                      <Select
+                        value={order.status}
+                        onValueChange={(value) => onUpdateOrderStatus(order.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="processing">Processing</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  ) : (
+                  </div>
+                </div>
+                
+                {/* Customer Information */}
+                {order.order_type === 'car' ? (
+                  <div className="p-4 border-b border-border">
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Customer Information:</h4>
                     <div className="space-y-1">
+                      <p className="text-sm"><span className="font-medium">Name:</span> {order.customer_name}</p>
+                      <p className="text-sm"><span className="font-medium">Contact:</span> @{order.telegram_username}</p>
+                      <p className="text-sm"><span className="font-medium">People:</span> {order.people_count}</p>
+                      <p className="text-sm"><span className="font-medium">Type:</span> {order.location_type}</p>
+                      <p className="text-sm"><span className="font-medium">Route:</span> {order.from_location} → {order.to_location}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 border-b border-border">
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Customer:</h4>
+                    <p className="text-sm">User ID: {order.user_id.slice(0, 8)}...</p>
+                  </div>
+                )}
+
+                {/* Product Details - Only for shop orders */}
+                {order.order_type !== 'car' && (
+                  <div className="p-4">
+                    <h4 className="font-medium text-sm text-muted-foreground mb-3">Items Ordered:</h4>
+                    <div className="space-y-3">
                       {order.items && order.items.length > 0 ? (
                         order.items.map((item, idx) => (
-                          <p key={idx} className="text-xs">
-                            {item.quantity}x {item.product_name} (${item.price})
-                          </p>
+                          <div key={idx} className="flex items-center gap-3">
+                            <img
+                              src={'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
+                              alt={item.product_name || 'Product'}
+                              className="w-12 h-12 object-cover rounded-md"
+                            />
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{item.product_name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.product_type && (
+                                  <Badge variant="outline" className="text-xs mr-2">
+                                    {item.product_type}
+                                  </Badge>
+                                )}
+                                Qty: {item.quantity} × {item.price.toLocaleString()} MMK
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium text-sm">{(item.price * item.quantity).toLocaleString()} MMK</p>
+                            </div>
+                          </div>
                         ))
                       ) : (
-                        <p className="text-xs text-muted-foreground">No items</p>
+                        <p className="text-xs text-muted-foreground">No items found</p>
                       )}
                     </div>
-                  )}
-                </TableCell>
-                
-                <TableCell>
-                  <p className="font-medium">${order.total_amount}</p>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="space-y-1">
-                    <p className="text-xs">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(order.created_at).toLocaleTimeString()}
-                    </p>
                   </div>
-                </TableCell>
-                
-                <TableCell>
-                  <Badge variant={getStatusBadgeVariant(order.status)}>
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                
-                <TableCell>
-                  <Select
-                    value={order.status}
-                    onValueChange={(value) => onUpdateOrderStatus(order.id, value)}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-              </TableRow>
+                )}
+              </div>
             ))}
-          </TableBody>
-        </Table>
-        
-        {orders.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No orders found</p>
           </div>
         )}
       </CardContent>

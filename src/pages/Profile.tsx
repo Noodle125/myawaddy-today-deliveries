@@ -266,7 +266,14 @@ const Profile = () => {
                   <Input
                     id="display_name"
                     value={profile?.display_name || ''}
-                    onChange={(e) => setProfile(prev => prev ? {...prev, display_name: e.target.value} : null)}
+                    onChange={(e) => setProfile(prev => prev ? {...prev, display_name: e.target.value} : {
+                      id: '',
+                      user_id: user?.id || '',
+                      display_name: e.target.value,
+                      phone_number: '',
+                      telegram_username: '',
+                      profile_picture_url: null,
+                    })}
                   />
                 </div>
                  <div className="space-y-2">
@@ -274,7 +281,15 @@ const Profile = () => {
                    <Input
                      id="username"
                      value={userInfo?.username || ''}
-                     onChange={(e) => setUserInfo(prev => prev ? {...prev, username: e.target.value} : null)}
+                     onChange={(e) => setUserInfo(prev => prev ? {...prev, username: e.target.value} : {
+                       id: user?.id || '',
+                       username: e.target.value,
+                       age: null,
+                       gender: null,
+                       relationship_status: null,
+                       bio: null,
+                       avatar_url: null,
+                     })}
                      placeholder="Enter your username"
                    />
                  </div>
@@ -283,7 +298,14 @@ const Profile = () => {
                    <Input
                      id="phone"
                      value={profile?.phone_number || ''}
-                     onChange={(e) => setProfile(prev => prev ? {...prev, phone_number: e.target.value} : null)}
+                     onChange={(e) => setProfile(prev => prev ? {...prev, phone_number: e.target.value} : {
+                       id: '',
+                       user_id: user?.id || '',
+                       display_name: '',
+                       phone_number: e.target.value,
+                       telegram_username: '',
+                       profile_picture_url: null,
+                     })}
                      placeholder="Enter your phone number"
                    />
                  </div>
@@ -292,7 +314,14 @@ const Profile = () => {
                    <Input
                      id="telegram"
                      value={profile?.telegram_username || ''}
-                     onChange={(e) => setProfile(prev => prev ? {...prev, telegram_username: e.target.value} : null)}
+                     onChange={(e) => setProfile(prev => prev ? {...prev, telegram_username: e.target.value} : {
+                       id: '',
+                       user_id: user?.id || '',
+                       display_name: '',
+                       phone_number: '',
+                       telegram_username: e.target.value,
+                       profile_picture_url: null,
+                     })}
                      placeholder="@username"
                    />
                  </div>
@@ -302,7 +331,15 @@ const Profile = () => {
                       id="age"
                       type="number"
                       value={userInfo?.age?.toString() || ''}
-                      onChange={(e) => setUserInfo(prev => prev ? {...prev, age: e.target.value ? parseInt(e.target.value) : null} : null)}
+                      onChange={(e) => setUserInfo(prev => prev ? {...prev, age: e.target.value ? parseInt(e.target.value) : null} : {
+                        id: user?.id || '',
+                        username: '',
+                        age: e.target.value ? parseInt(e.target.value) : null,
+                        gender: null,
+                        relationship_status: null,
+                        bio: null,
+                        avatar_url: null,
+                      })}
                       placeholder="Enter your age"
                     />
                   </div>
@@ -311,7 +348,15 @@ const Profile = () => {
                     <Input
                       id="gender"
                       value={userInfo?.gender || ''}
-                      onChange={(e) => setUserInfo(prev => prev ? {...prev, gender: e.target.value} : null)}
+                      onChange={(e) => setUserInfo(prev => prev ? {...prev, gender: e.target.value} : {
+                        id: user?.id || '',
+                        username: '',
+                        age: null,
+                        gender: e.target.value,
+                        relationship_status: null,
+                        bio: null,
+                        avatar_url: null,
+                      })}
                       placeholder="Enter your gender"
                     />
                   </div>
@@ -321,7 +366,15 @@ const Profile = () => {
                   <Textarea
                     id="bio"
                     value={userInfo?.bio || ''}
-                    onChange={(e) => setUserInfo(prev => prev ? {...prev, bio: e.target.value} : null)}
+                    onChange={(e) => setUserInfo(prev => prev ? {...prev, bio: e.target.value} : {
+                      id: user?.id || '',
+                      username: '',
+                      age: null,
+                      gender: null,
+                      relationship_status: null,
+                      bio: e.target.value,
+                      avatar_url: null,
+                    })}
                     placeholder="Tell us about yourself..."
                     className="min-h-[100px]"
                   />

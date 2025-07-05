@@ -66,6 +66,60 @@ export type Database = {
         }
         Relationships: []
       }
+      bots: {
+        Row: {
+          active_ai_api: string | null
+          ai_api_type: string | null
+          bot_name: string
+          bot_settings: Json | null
+          bot_type: string
+          created_at: string
+          deepseek_key: string | null
+          expires_at: string
+          gemini_key: string | null
+          id: string
+          is_active: boolean | null
+          openai_key: string | null
+          telegram_bot_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_ai_api?: string | null
+          ai_api_type?: string | null
+          bot_name: string
+          bot_settings?: Json | null
+          bot_type: string
+          created_at?: string
+          deepseek_key?: string | null
+          expires_at: string
+          gemini_key?: string | null
+          id?: string
+          is_active?: boolean | null
+          openai_key?: string | null
+          telegram_bot_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_ai_api?: string | null
+          ai_api_type?: string | null
+          bot_name?: string
+          bot_settings?: Json | null
+          bot_type?: string
+          created_at?: string
+          deepseek_key?: string | null
+          expires_at?: string
+          gemini_key?: string | null
+          id?: string
+          is_active?: boolean | null
+          openai_key?: string | null
+          telegram_bot_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_owners: {
         Row: {
           business_name: string
@@ -1011,6 +1065,9 @@ export type Database = {
           display_name: string | null
           gender: string | null
           id: string
+          is_premium: boolean | null
+          payment_status: string | null
+          premium_expiry: string | null
           relationship_status: string | null
           username: string
         }
@@ -1022,6 +1079,9 @@ export type Database = {
           display_name?: string | null
           gender?: string | null
           id: string
+          is_premium?: boolean | null
+          payment_status?: string | null
+          premium_expiry?: string | null
           relationship_status?: string | null
           username: string
         }
@@ -1033,6 +1093,9 @@ export type Database = {
           display_name?: string | null
           gender?: string | null
           id?: string
+          is_premium?: boolean | null
+          payment_status?: string | null
+          premium_expiry?: string | null
           relationship_status?: string | null
           username?: string
         }
@@ -1076,12 +1139,24 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      count_user_active_bots: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
+      extend_bot_expiry: {
+        Args: { bot_uuid: string; days: number }
+        Returns: undefined
+      }
       get_active_users_count: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
       is_admin: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_user_premium: {
+        Args: { user_uuid: string }
         Returns: boolean
       }
     }

@@ -187,42 +187,48 @@ const Profile = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <User className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">My Profile</h1>
-          {isAdmin && (
-            <Badge variant="secondary" className="ml-2">
-              Admin
-            </Badge>
-          )}
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <User className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
+              <p className="text-sm text-muted-foreground">Manage your account settings and preferences</p>
+            </div>
+            {isAdmin && (
+              <Badge variant="secondary" className="ml-2">
+                Admin
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2">
-            <ShoppingBag className="h-4 w-4" />
-            Orders
-          </TabsTrigger>
-          <TabsTrigger value="car-orders" className="flex items-center gap-2">
-            <Car className="h-4 w-4" />
-            Car Orders
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="car-orders" className="flex items-center gap-2">
+              <Car className="h-4 w-4" />
+              Car Orders
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold">Personal Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="display_name">Display Name</Label>
                   <Input
@@ -273,43 +279,46 @@ const Profile = () => {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={userInfo?.bio || ''}
-                  onChange={(e) => setUserInfo(prev => prev ? {...prev, bio: e.target.value} : null)}
-                  placeholder="Tell us about yourself..."
-                />
-              </div>
-              <Button onClick={updateProfile} disabled={saving} className="w-full md:w-auto">
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    value={userInfo?.bio || ''}
+                    onChange={(e) => setUserInfo(prev => prev ? {...prev, bio: e.target.value} : null)}
+                    placeholder="Tell us about yourself..."
+                    className="min-h-[100px]"
+                  />
+                </div>
+                <div className="md:col-span-2 pt-4 border-t">
+                  <Button onClick={updateProfile} disabled={saving} className="w-full md:w-auto">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="orders" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Order History</CardTitle>
-            </CardHeader>
+          <TabsContent value="orders" className="space-y-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold">Order History</CardTitle>
+              </CardHeader>
             <CardContent>
               {orders.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No orders found.</p>
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={order.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
                       <div>
-                        <p className="font-medium">{order.order_type}</p>
+                        <p className="font-medium text-foreground capitalize">{order.order_type}</p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(order.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${order.total_amount}</p>
+                        <p className="font-medium text-foreground">${order.total_amount}</p>
                         <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
                           {order.status}
                         </Badge>
@@ -322,26 +331,26 @@ const Profile = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="car-orders" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Car Order History</CardTitle>
-            </CardHeader>
+          <TabsContent value="car-orders" className="space-y-4">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-semibold">Car Order History</CardTitle>
+              </CardHeader>
             <CardContent>
               {carOrders.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No car orders found.</p>
               ) : (
                 <div className="space-y-4">
                   {carOrders.map((carOrder) => (
-                    <div key={carOrder.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={carOrder.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-card hover:bg-accent/50 transition-colors">
                       <div>
-                        <p className="font-medium">{carOrder.from_location} → {carOrder.to_location}</p>
+                        <p className="font-medium text-foreground">{carOrder.from_location} → {carOrder.to_location}</p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(carOrder.created_at).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">${carOrder.price}</p>
+                        <p className="font-medium text-foreground">${carOrder.price}</p>
                         <Badge variant={carOrder.status === 'completed' ? 'default' : 'secondary'}>
                           {carOrder.status}
                         </Badge>
@@ -352,8 +361,9 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

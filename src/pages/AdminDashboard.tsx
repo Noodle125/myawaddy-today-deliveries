@@ -135,23 +135,51 @@ const AdminDashboard = () => {
         activeRewards: activeRewardsCount || 0,
       });
 
-      // Fetch recent users
+      // Fetch recent users with profile information
       const { data: usersData } = await supabase
         .from('users')
         .select(`
           id,
           username,
-          created_at
+          created_at,
+          display_name,
+          bio
         `)
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (usersData) {
+      // Fetch profiles for additional user info
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select(`
+          user_id,
+          display_name,
+          phone_number,
+          telegram_username,
+          profile_picture_url
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Combine users with profile data
+      if (usersData && profilesData) {
+        const combinedUsers = usersData.map(user => {
+          const profile = profilesData.find(p => p.user_id === user.id);
+          return {
+            ...user,
+            profile_display_name: profile?.display_name,
+            phone_number: profile?.phone_number,
+            telegram_username: profile?.telegram_username,
+            profile_picture_url: profile?.profile_picture_url
+          };
+        });
+        setUsers(combinedUsers);
+      } else if (usersData) {
         setUsers(usersData);
       }
 
-      // Fetch recent orders (including car orders converted to orders format)
-      const [ordersResult, carOrdersResult] = await Promise.all([
+      // Fetch recent orders with more details
+      const [ordersResult, carOrdersResult, orderItemsResult] = await Promise.all([
         supabase
           .from('orders')
           .select(`
@@ -160,7 +188,9 @@ const AdminDashboard = () => {
             status,
             total_amount,
             created_at,
-            user_id
+            updated_at,
+            user_id,
+            delivery_address
           `)
           .order('created_at', { ascending: false })
           .limit(10),
@@ -171,27 +201,63 @@ const AdminDashboard = () => {
             status,
             price,
             created_at,
+            updated_at,
             user_id,
             from_location,
-            to_location
+            to_location,
+            name,
+            telegram_username,
+            people_count,
+            location_type
           `)
           .order('created_at', { ascending: false })
-          .limit(10)
+          .limit(10),
+        supabase
+          .from('order_items')
+          .select(`
+            order_id,
+            quantity,
+            price,
+            products (
+              name,
+              type
+            )
+          `)
       ]);
 
-      // Combine regular orders and car orders
+      // Combine regular orders and car orders with enhanced data
+      const regularOrdersWithItems = (ordersResult.data || []).map(order => {
+        const items = (orderItemsResult.data || []).filter(item => item.order_id === order.id);
+        return {
+          ...order,
+          items: items.map(item => ({
+            quantity: item.quantity,
+            price: item.price,
+            product_name: item.products?.name,
+            product_type: item.products?.type
+          }))
+        };
+      });
+
+      const carOrdersFormatted = (carOrdersResult.data || []).map(carOrder => ({
+        id: carOrder.id,
+        order_type: 'car',
+        status: carOrder.status,
+        total_amount: carOrder.price,
+        created_at: carOrder.created_at,
+        updated_at: carOrder.updated_at,
+        user_id: carOrder.user_id,
+        from_location: carOrder.from_location,
+        to_location: carOrder.to_location,
+        customer_name: carOrder.name,
+        telegram_username: carOrder.telegram_username,
+        people_count: carOrder.people_count,
+        location_type: carOrder.location_type
+      }));
+
       const allOrders = [
-        ...(ordersResult.data || []),
-        ...(carOrdersResult.data || []).map(carOrder => ({
-          id: carOrder.id,
-          order_type: 'car',
-          status: carOrder.status,
-          total_amount: carOrder.price,
-          created_at: carOrder.created_at,
-          user_id: carOrder.user_id,
-          from_location: carOrder.from_location,
-          to_location: carOrder.to_location
-        }))
+        ...regularOrdersWithItems,
+        ...carOrdersFormatted
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setOrders(allOrders);

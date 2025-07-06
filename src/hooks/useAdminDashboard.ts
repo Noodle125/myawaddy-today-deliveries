@@ -18,36 +18,45 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (retries = 3) => {
+    if (!user || !isAdmin) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Fetch stats
-      const [
-        { count: usersCount },
-        { count: ordersCount },
-        { count: carOrdersCount },
-        { count: productsCount },
-        { count: pendingOrdersCount },
-        { count: activeRewardsCount },
-      ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('orders').select('*', { count: 'exact', head: true }),
-        supabase.from('car_orders').select('*', { count: 'exact', head: true }),
-        supabase.from('products').select('*', { count: 'exact', head: true }),
-        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('user_rewards').select('*', { count: 'exact', head: true }).eq('is_redeemed', false),
-      ]);
+      console.log('Fetching dashboard data...');
+      
+      // Fetch stats sequentially to avoid overwhelming the connection
+      const usersCount = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      if (usersCount.error) throw usersCount.error;
+      
+      const ordersCount = await supabase.from('orders').select('*', { count: 'exact', head: true });
+      if (ordersCount.error) throw ordersCount.error;
+      
+      const carOrdersCount = await supabase.from('car_orders').select('*', { count: 'exact', head: true });
+      if (carOrdersCount.error) throw carOrdersCount.error;
+      
+      const productsCount = await supabase.from('products').select('*', { count: 'exact', head: true });
+      if (productsCount.error) throw productsCount.error;
+      
+      const pendingOrdersCount = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      if (pendingOrdersCount.error) throw pendingOrdersCount.error;
+      
+      const activeRewardsCount = await supabase.from('user_rewards').select('*', { count: 'exact', head: true }).eq('is_redeemed', false);
+      if (activeRewardsCount.error) throw activeRewardsCount.error;
 
       setStats({
-        totalUsers: usersCount || 0,
-        totalOrders: ordersCount || 0,
-        totalCarOrders: carOrdersCount || 0,
-        totalProducts: productsCount || 0,
-        pendingOrders: pendingOrdersCount || 0,
-        activeRewards: activeRewardsCount || 0,
+        totalUsers: usersCount.count || 0,
+        totalOrders: ordersCount.count || 0,
+        totalCarOrders: carOrdersCount.count || 0,
+        totalProducts: productsCount.count || 0,
+        pendingOrders: pendingOrdersCount.count || 0,
+        activeRewards: activeRewardsCount.count || 0,
       });
 
       // Fetch recent users with profile information
-      const { data: usersData } = await supabase
+      const usersResult = await supabase
         .from('users')
         .select(`
           id,
@@ -58,9 +67,11 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
         `)
         .order('created_at', { ascending: false })
         .limit(10);
+      
+      if (usersResult.error) throw usersResult.error;
 
       // Fetch profiles for additional user info
-      const { data: profilesData } = await supabase
+      const profilesResult = await supabase
         .from('profiles')
         .select(`
           user_id,
@@ -71,11 +82,13 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
         `)
         .order('created_at', { ascending: false })
         .limit(10);
+      
+      if (profilesResult.error) throw profilesResult.error;
 
       // Combine users with profile data
-      if (usersData && profilesData) {
-        const combinedUsers = usersData.map(user => {
-          const profile = profilesData.find(p => p.user_id === user.id);
+      if (usersResult.data && profilesResult.data) {
+        const combinedUsers = usersResult.data.map(user => {
+          const profile = profilesResult.data.find(p => p.user_id === user.id);
           return {
             ...user,
             profile_display_name: profile?.display_name,
@@ -85,56 +98,62 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
           };
         });
         setUsers(combinedUsers);
-      } else if (usersData) {
-        setUsers(usersData);
+      } else if (usersResult.data) {
+        setUsers(usersResult.data);
       }
 
-      // Fetch recent orders with more details
-      const [ordersResult, carOrdersResult, orderItemsResult] = await Promise.all([
-        supabase
-          .from('orders')
-          .select(`
-            id,
-            order_type,
-            status,
-            total_amount,
-            created_at,
-            updated_at,
-            user_id,
-            delivery_address
-          `)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('car_orders')
-          .select(`
-            id,
-            status,
-            price,
-            created_at,
-            updated_at,
-            user_id,
-            from_location,
-            to_location,
+      // Fetch recent orders with more details - sequential to avoid overwhelming connection
+      const ordersResult = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_type,
+          status,
+          total_amount,
+          created_at,
+          updated_at,
+          user_id,
+          delivery_address
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (ordersResult.error) throw ordersResult.error;
+
+      const carOrdersResult = await supabase
+        .from('car_orders')
+        .select(`
+          id,
+          status,
+          price,
+          created_at,
+          updated_at,
+          user_id,
+          from_location,
+          to_location,
+          name,
+          telegram_username,
+          people_count,
+          location_type
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (carOrdersResult.error) throw carOrdersResult.error;
+
+      const orderItemsResult = await supabase
+        .from('order_items')
+        .select(`
+          order_id,
+          quantity,
+          price,
+          products (
             name,
-            telegram_username,
-            people_count,
-            location_type
-          `)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabase
-          .from('order_items')
-          .select(`
-            order_id,
-            quantity,
-            price,
-            products (
-              name,
-              type
-            )
-          `)
-      ]);
+            type
+          )
+        `);
+      
+      if (orderItemsResult.error) throw orderItemsResult.error;
 
       // Combine regular orders and car orders with enhanced data
       const regularOrdersWithItems = (ordersResult.data || []).map(order => {
@@ -174,38 +193,52 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
       setOrders(allOrders);
 
       // Fetch products
-      const { data: productsData } = await supabase
+      const productsResult = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (productsData) {
-        setProducts(productsData);
+      if (productsResult.error) throw productsResult.error;
+      if (productsResult.data) {
+        setProducts(productsResult.data);
       }
 
       // Fetch cashback codes
-      const { data: codesData } = await supabase
+      const codesResult = await supabase
         .from('cashback_codes')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (codesData) {
-        setCodes(codesData);
+      if (codesResult.error) throw codesResult.error;
+      if (codesResult.data) {
+        setCodes(codesResult.data);
       }
 
       // Fetch categories
-      const { data: categoriesData } = await supabase
+      const categoriesResult = await supabase
         .from('categories')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (categoriesData) {
-        setCategories(categoriesData);
+      if (categoriesResult.error) throw categoriesResult.error;
+      if (categoriesResult.data) {
+        setCategories(categoriesResult.data);
       }
+      
+      console.log('Dashboard data fetched successfully');
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching dashboard data (attempt', 4 - retries, '):', error);
+      
+      if (retries > 0) {
+        console.log('Retrying dashboard fetch in 2 seconds...');
+        setTimeout(() => fetchDashboardData(retries - 1), 2000);
+        return;
+      }
+      
+      // If all retries failed, show fallback data
+      console.log('All dashboard fetch retries failed, showing fallback data');
     } finally {
       setLoading(false);
     }

@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, X, ShoppingBag, Utensils, Car, Award, User, Home } from 'lucide-react';
+import { Menu, X, ShoppingBag, Utensils, Car, Award, User, Home, Settings } from 'lucide-react';
+import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationBadge } from '@/components/Notifications/NotificationBadge';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut, isAdmin } = useAuth();
+  const { unreadCount } = useNotifications();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
@@ -49,11 +52,13 @@ const Navbar = () => {
             {isAdmin && (
               <Link
                 to="/dashboard"
-                className={`nav-link flex items-center space-x-2 ${
+                className={`nav-link flex items-center space-x-2 relative ${
                   isActive('/dashboard') ? 'active' : ''
                 }`}
               >
+                <Settings className="w-4 h-4" />
                 <span>Dashboard</span>
+                <NotificationBadge count={unreadCount} />
               </Link>
             )}
           </div>
@@ -126,14 +131,18 @@ const Navbar = () => {
               {isAdmin && (
                 <Link
                   to="/dashboard"
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                  className={`block px-3 py-2 rounded-md text-base font-medium relative ${
                     isActive('/dashboard')
                       ? 'bg-primary text-white'
                       : 'text-foreground hover:bg-muted hover:text-primary'
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
-                  Dashboard
+                  <div className="flex items-center space-x-2">
+                    <Settings className="w-4 h-4" />
+                    <span>Dashboard</span>
+                    <NotificationBadge count={unreadCount} />
+                  </div>
                 </Link>
               )}
 

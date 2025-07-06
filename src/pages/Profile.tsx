@@ -396,7 +396,7 @@ const Profile = () => {
                       placeholder="Enter your gender"
                     />
                   </div>
-              </div>
+               </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="bio">Bio</Label>
                   <Textarea

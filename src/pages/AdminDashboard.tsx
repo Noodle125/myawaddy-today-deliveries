@@ -19,7 +19,7 @@ import { useAdminActions } from '@/hooks/useAdminActions';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, markAllAsRead } = useNotifications();
   
   const { 
     stats, 
@@ -90,7 +90,11 @@ const AdminDashboard = () => {
             <Users className="h-4 w-4" />
             Users
           </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2 relative">
+          <TabsTrigger 
+            value="orders" 
+            className="flex items-center gap-2 relative"
+            onClick={() => markAllAsRead()}
+          >
             <ShoppingBag className="h-4 w-4" />
             Orders
             {unreadCount > 0 && (

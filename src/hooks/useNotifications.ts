@@ -23,11 +23,15 @@ export const useNotifications = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!user) return;
+  // Fetch notifications with retry logic
+  const fetchNotifications = async (retries = 3) => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
+      console.log('Fetching notifications for user:', user.id);
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
@@ -35,9 +39,13 @@ export const useNotifications = () => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       if (data) {
+        console.log('Notifications fetched successfully:', data.length);
         const typedNotifications = data.map(notification => ({
           ...notification,
           type: notification.type as 'info' | 'order' | 'success' | 'warning' | 'error'
@@ -46,7 +54,17 @@ export const useNotifications = () => {
         setUnreadCount(typedNotifications.filter(n => !n.is_read).length);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Error fetching notifications (attempt', 4 - retries, '):', error);
+      
+      if (retries > 0) {
+        console.log('Retrying in 2 seconds...');
+        setTimeout(() => fetchNotifications(retries - 1), 2000);
+        return;
+      }
+      
+      // If all retries failed, set empty state but don't show error to user
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -54,14 +72,20 @@ export const useNotifications = () => {
 
   // Mark notification as read
   const markAsRead = async (notificationId: string) => {
+    if (!user) return;
+    
     try {
+      console.log('Marking notification as read:', notificationId);
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true, updated_at: new Date().toISOString() })
         .eq('id', notificationId)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        return;
+      }
 
       setNotifications(prev => 
         prev.map(n => 
@@ -69,6 +93,7 @@ export const useNotifications = () => {
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
+      console.log('Notification marked as read successfully');
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -79,18 +104,23 @@ export const useNotifications = () => {
     if (!user) return;
 
     try {
+      console.log('Marking all notifications as read for user:', user.id);
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true, updated_at: new Date().toISOString() })
         .eq('user_id', user.id)
         .eq('is_read', false);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        return;
+      }
 
       setNotifications(prev => 
         prev.map(n => ({ ...n, is_read: true }))
       );
       setUnreadCount(0);
+      console.log('All notifications marked as read successfully');
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -119,10 +149,17 @@ export const useNotifications = () => {
           setUnreadCount(prev => prev + 1);
           
           // Play sound and show toast for order notifications
+          console.log('New notification received:', newNotification);
+          
           if (newNotification.type === 'order') {
-            playNotificationSound();
+            try {
+              playNotificationSound();
+              console.log('Notification sound played');
+            } catch (soundError) {
+              console.error('Error playing notification sound:', soundError);
+            }
             
-            const orderData = newNotification.metadata;
+            const orderData = newNotification.metadata || {};
             const orderDetails = orderData.car_order_id 
               ? `Car Order: ${orderData.from_location} → ${orderData.to_location}\nCustomer: ${orderData.customer_name}\nContact: @${orderData.telegram_username}\nAmount: ${orderData.price?.toLocaleString()} MMK`
               : `${orderData.order_type} Order\nAmount: ${orderData.total_amount?.toLocaleString()} MMK`;
@@ -132,12 +169,14 @@ export const useNotifications = () => {
               description: orderDetails,
               duration: 8000,
             });
+            console.log('Order notification toast shown');
           } else {
             toast({
               title: newNotification.title,
               description: newNotification.message,
               duration: 5000,
             });
+            console.log('General notification toast shown');
           }
         }
       )

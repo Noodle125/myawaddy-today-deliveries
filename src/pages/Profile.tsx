@@ -175,56 +175,81 @@ const Profile = () => {
   };
 
   const updateProfile = async () => {
-    if (!profile || !userInfo) {
-      console.log('Cannot save - missing data:', { profile, userInfo });
+    if (!user?.id) {
+      console.log('Cannot save - no user ID');
+      toast({
+        title: "Update Failed",
+        description: "Please log in again.",
+        variant: "destructive",
+      });
       return;
     }
 
-    console.log('Attempting to save profile:', { profile, userInfo });
+    console.log('Attempting to save profile...');
     setSaving(true);
+    
     try {
-      // Update or insert profile
-      const { data: profileResult, error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user?.id,
-          display_name: profile.display_name,
-          phone_number: profile.phone_number,
-          telegram_username: profile.telegram_username,
-        })
-        .select();
+      // Prepare profile data with fallbacks
+      const profileData = {
+        user_id: user.id,
+        display_name: profile?.display_name || '',
+        phone_number: profile?.phone_number || '',
+        telegram_username: profile?.telegram_username || '',
+      };
 
-      console.log('Profile upsert result:', { profileResult, profileError });
-      if (profileError) throw profileError;
+      console.log('Saving profile data:', profileData);
+
+      // Update or insert profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profileData, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        });
+
+      if (profileError) {
+        console.error('Profile save error:', profileError);
+        throw new Error(`Profile save failed: ${profileError.message}`);
+      }
+
+      // Prepare user data with fallbacks
+      const userData = {
+        id: user.id,
+        username: userInfo?.username || '',
+        age: userInfo?.age || null,
+        gender: userInfo?.gender || null,
+        relationship_status: userInfo?.relationship_status || null,
+        bio: userInfo?.bio || null,
+      };
+
+      console.log('Saving user data:', userData);
 
       // Update or insert user info
-      const { data: userResult, error: userError } = await supabase
+      const { error: userError } = await supabase
         .from('users')
-        .upsert({
-          id: user?.id,
-          username: userInfo.username,
-          age: userInfo.age,
-          gender: userInfo.gender,
-          relationship_status: userInfo.relationship_status,
-          bio: userInfo.bio,
-        })
-        .select();
+        .upsert(userData, { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        });
 
-      console.log('User upsert result:', { userResult, userError });
-      if (userError) throw userError;
+      if (userError) {
+        console.error('User save error:', userError);
+        throw new Error(`User save failed: ${userError.message}`);
+      }
 
+      console.log('Profile saved successfully');
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
       });
       
       // Refresh data to show updated information
-      fetchUserData();
+      await fetchUserData();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update profile. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {

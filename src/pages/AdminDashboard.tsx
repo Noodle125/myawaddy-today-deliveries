@@ -22,6 +22,7 @@ const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [lastOrderCount, setLastOrderCount] = useState(0);
+  const [hasNewOrders, setHasNewOrders] = useState(false);
   
   const { 
     stats, 
@@ -65,12 +66,22 @@ const AdminDashboard = () => {
     // Check for new orders
     if (orders.length > lastOrderCount && lastOrderCount > 0) {
       const newOrdersCount = orders.length - lastOrderCount;
+      const newOrders = orders.slice(0, newOrdersCount);
       
-      // Show notification
-      toast({
-        title: "New Order Received! 🔔",
-        description: `${newOrdersCount} new order${newOrdersCount > 1 ? 's' : ''} received`,
-        duration: 5000,
+      // Set new orders indicator
+      setHasNewOrders(true);
+      
+      // Show detailed notification for each new order
+      newOrders.forEach((order) => {
+        const orderDetails = order.order_type === 'car' 
+          ? `Car Order: ${order.from_location} → ${order.to_location}\nCustomer: ${order.customer_name}\nContact: @${order.telegram_username}\nAmount: ${order.total_amount.toLocaleString()} MMK`
+          : `${order.order_type} Order\nAmount: ${order.total_amount.toLocaleString()} MMK\nItems: ${order.items?.length || 0} items`;
+
+        toast({
+          title: "🔔 New Order Received!",
+          description: orderDetails,
+          duration: 8000,
+        });
       });
 
       // Play notification sound
@@ -162,9 +173,12 @@ const AdminDashboard = () => {
             <Users className="h-4 w-4" />
             Users
           </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2">
+          <TabsTrigger value="orders" className="flex items-center gap-2 relative">
             <ShoppingBag className="h-4 w-4" />
             Orders
+            {hasNewOrders && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            )}
           </TabsTrigger>
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
@@ -188,7 +202,7 @@ const AdminDashboard = () => {
           <UserManagement users={users} />
         </TabsContent>
 
-        <TabsContent value="orders" className="space-y-4">
+        <TabsContent value="orders" className="space-y-4" onClick={() => setHasNewOrders(false)}>
           <OrderManagement orders={orders} onUpdateOrderStatus={updateOrderStatus} />
         </TabsContent>
 

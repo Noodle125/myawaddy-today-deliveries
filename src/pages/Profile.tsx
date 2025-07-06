@@ -154,29 +154,29 @@ const Profile = () => {
 
     setSaving(true);
     try {
-      // Update profile
+      // Update or insert profile
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          user_id: user?.id,
           display_name: profile.display_name,
           phone_number: profile.phone_number,
           telegram_username: profile.telegram_username,
-        })
-        .eq('user_id', user?.id);
+        });
 
       if (profileError) throw profileError;
 
-      // Update user info
+      // Update or insert user info
       const { error: userError } = await supabase
         .from('users')
-        .update({
+        .upsert({
+          id: user?.id,
           username: userInfo.username,
           age: userInfo.age,
           gender: userInfo.gender,
           relationship_status: userInfo.relationship_status,
           bio: userInfo.bio,
-        })
-        .eq('id', user?.id);
+        });
 
       if (userError) throw userError;
 

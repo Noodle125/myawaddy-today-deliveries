@@ -2,10 +2,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Order } from '@/types/admin';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface OrderManagementProps {
   orders: Order[];
   onUpdateOrderStatus: (orderId: string, newStatus: string) => void;
+}
+
+interface CustomerProfile {
+  user_id: string;
+  display_name: string | null;
+  phone_number: string;
+  telegram_username: string;
+  username?: string;
 }
 
 const getStatusBadgeVariant = (status: string) => {
@@ -19,6 +29,39 @@ const getStatusBadgeVariant = (status: string) => {
 };
 
 export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagementProps) => {
+  const [customerProfiles, setCustomerProfiles] = useState<{[key: string]: CustomerProfile}>({});
+
+  useEffect(() => {
+    const fetchCustomerProfiles = async () => {
+      const userIds = orders
+        .filter(order => order.order_type !== 'car')
+        .map(order => order.user_id);
+      
+      if (userIds.length === 0) return;
+
+      // Fetch profiles and user info
+      const [profilesResponse, usersResponse] = await Promise.all([
+        supabase.from('profiles').select('*').in('user_id', userIds),
+        supabase.from('users').select('id, username').in('id', userIds)
+      ]);
+
+      if (profilesResponse.data && usersResponse.data) {
+        const profilesMap: {[key: string]: CustomerProfile} = {};
+        
+        profilesResponse.data.forEach(profile => {
+          const userInfo = usersResponse.data?.find(u => u.id === profile.user_id);
+          profilesMap[profile.user_id] = {
+            ...profile,
+            username: userInfo?.username
+          };
+        });
+        
+        setCustomerProfiles(profilesMap);
+      }
+    };
+
+    fetchCustomerProfiles();
+  }, [orders]);
   return (
     <Card>
       <CardHeader>
@@ -91,8 +134,17 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
                   </div>
                 ) : (
                   <div className="p-4 border-b border-border">
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Customer:</h4>
-                    <p className="text-sm">User ID: {order.user_id.slice(0, 8)}...</p>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Customer Information:</h4>
+                    {customerProfiles[order.user_id] ? (
+                      <div className="space-y-1">
+                        <p className="text-sm"><span className="font-medium">Name:</span> {customerProfiles[order.user_id].display_name || customerProfiles[order.user_id].username || 'N/A'}</p>
+                        <p className="text-sm"><span className="font-medium">Phone:</span> {customerProfiles[order.user_id].phone_number || 'N/A'}</p>
+                        <p className="text-sm"><span className="font-medium">Telegram:</span> @{customerProfiles[order.user_id].telegram_username || 'N/A'}</p>
+                        <p className="text-sm"><span className="font-medium">Username:</span> {customerProfiles[order.user_id].username || 'N/A'}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm">Loading customer information...</p>
+                    )}
                   </div>
                 )}
 

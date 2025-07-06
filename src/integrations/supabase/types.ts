@@ -30,6 +30,78 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_deliveries: {
+        Row: {
+          ad_id: string
+          bot_id: string
+          delivered_at: string
+          id: string
+          user_telegram_id: string
+        }
+        Insert: {
+          ad_id: string
+          bot_id: string
+          delivered_at?: string
+          id?: string
+          user_telegram_id: string
+        }
+        Update: {
+          ad_id?: string
+          bot_id?: string
+          delivered_at?: string
+          id?: string
+          user_telegram_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_deliveries_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_deliveries_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ads: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          send_to_all_free_bots: boolean | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          send_to_all_free_bots?: boolean | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          send_to_all_free_bots?: boolean | null
+          title?: string
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           category: string
@@ -65,6 +137,252 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      bot_conversations: {
+        Row: {
+          bot_id: string
+          created_at: string
+          id: string
+          message_text: string
+          response_text: string | null
+          user_telegram_id: string
+        }
+        Insert: {
+          bot_id: string
+          created_at?: string
+          id?: string
+          message_text: string
+          response_text?: string | null
+          user_telegram_id: string
+        }
+        Update: {
+          bot_id?: string
+          created_at?: string
+          id?: string
+          message_text?: string
+          response_text?: string | null
+          user_telegram_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_conversations_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_feeds: {
+        Row: {
+          bot_id: string
+          channel_username: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_posted_at: string | null
+          post_format: string | null
+          source_type: string
+          source_url: string
+        }
+        Insert: {
+          bot_id: string
+          channel_username: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_posted_at?: string | null
+          post_format?: string | null
+          source_type: string
+          source_url: string
+        }
+        Update: {
+          bot_id?: string
+          channel_username?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_posted_at?: string | null
+          post_format?: string | null
+          source_type?: string
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_feeds_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_games: {
+        Row: {
+          best_score: number | null
+          bot_id: string
+          created_at: string
+          game_type: string
+          games_played: number | null
+          id: string
+          score: number | null
+          updated_at: string
+          user_telegram_id: string
+        }
+        Insert: {
+          best_score?: number | null
+          bot_id: string
+          created_at?: string
+          game_type: string
+          games_played?: number | null
+          id?: string
+          score?: number | null
+          updated_at?: string
+          user_telegram_id: string
+        }
+        Update: {
+          best_score?: number | null
+          bot_id?: string
+          created_at?: string
+          game_type?: string
+          games_played?: number | null
+          id?: string
+          score?: number | null
+          updated_at?: string
+          user_telegram_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_games_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_giveaway_participants: {
+        Row: {
+          giveaway_id: string
+          id: string
+          joined_at: string
+          referral_count: number | null
+          user_telegram_id: string
+          username: string | null
+        }
+        Insert: {
+          giveaway_id: string
+          id?: string
+          joined_at?: string
+          referral_count?: number | null
+          user_telegram_id: string
+          username?: string | null
+        }
+        Update: {
+          giveaway_id?: string
+          id?: string
+          joined_at?: string
+          referral_count?: number | null
+          user_telegram_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_giveaway_participants_giveaway_id_fkey"
+            columns: ["giveaway_id"]
+            isOneToOne: false
+            referencedRelation: "bot_giveaways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_giveaways: {
+        Row: {
+          bot_id: string
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          is_active: boolean | null
+          max_participants: number | null
+          prize: string
+          require_membership: boolean | null
+          required_channels: string[] | null
+          title: string
+        }
+        Insert: {
+          bot_id: string
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          prize: string
+          require_membership?: boolean | null
+          required_channels?: string[] | null
+          title: string
+        }
+        Update: {
+          bot_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          max_participants?: number | null
+          prize?: string
+          require_membership?: boolean | null
+          required_channels?: string[] | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_giveaways_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_notes: {
+        Row: {
+          bot_id: string
+          content: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_telegram_id: string
+        }
+        Insert: {
+          bot_id: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_telegram_id: string
+        }
+        Update: {
+          bot_id?: string
+          content?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_telegram_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_notes_bot_id_fkey"
+            columns: ["bot_id"]
+            isOneToOne: false
+            referencedRelation: "bots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bots: {
         Row: {
@@ -1151,11 +1469,31 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_bot_by_token: {
+        Args: { bot_token: string }
+        Returns: {
+          id: string
+          user_id: string
+          bot_name: string
+          bot_type: string
+          bot_settings: Json
+          openai_key: string
+          gemini_key: string
+          deepseek_key: string
+          active_ai_api: string
+          is_active: boolean
+          expires_at: string
+        }[]
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
       }
       is_user_premium: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      should_inject_ads: {
         Args: { user_uuid: string }
         Returns: boolean
       }

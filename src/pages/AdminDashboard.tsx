@@ -1,9 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Users, ShoppingBag, Package, FolderPlus, Code, BarChart3 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
 
 // Import refactored components
 import { DashboardStats } from '@/components/admin/DashboardStats';
@@ -20,9 +19,7 @@ import { useAdminActions } from '@/hooks/useAdminActions';
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
-  const { toast } = useToast();
-  const [lastOrderCount, setLastOrderCount] = useState(0);
-  const [hasNewOrders, setHasNewOrders] = useState(false);
+  const { unreadCount } = useNotifications();
   
   const { 
     stats, 
@@ -43,92 +40,12 @@ const AdminDashboard = () => {
     createProduct
   } = useAdminActions(orders, fetchDashboardData);
 
-  // Play notification sound
-  const playNotificationSound = () => {
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.play().catch(console.error);
-    } catch (error) {
-      console.error('Error playing notification sound:', error);
-    }
-  };
-
-  // Set up real-time notifications for new orders
+  // Refresh dashboard data when notifications are received
   useEffect(() => {
-    if (!user || !isAdmin) return;
-
-    // Initialize last order count
-    if (orders.length > 0 && lastOrderCount === 0) {
-      setLastOrderCount(orders.length);
-      return;
+    if (unreadCount > 0) {
+      fetchDashboardData();
     }
-
-    // Check for new orders
-    if (orders.length > lastOrderCount && lastOrderCount > 0) {
-      const newOrdersCount = orders.length - lastOrderCount;
-      const newOrders = orders.slice(0, newOrdersCount);
-      
-      // Set new orders indicator
-      setHasNewOrders(true);
-      
-      // Show detailed notification for each new order
-      newOrders.forEach((order) => {
-        const orderDetails = order.order_type === 'car' 
-          ? `Car Order: ${order.from_location} → ${order.to_location}\nCustomer: ${order.customer_name}\nContact: @${order.telegram_username}\nAmount: ${order.total_amount.toLocaleString()} MMK`
-          : `${order.order_type} Order\nAmount: ${order.total_amount.toLocaleString()} MMK\nItems: ${order.items?.length || 0} items`;
-
-        toast({
-          title: "🔔 New Order Received!",
-          description: orderDetails,
-          duration: 8000,
-        });
-      });
-
-      // Play notification sound
-      playNotificationSound();
-      
-      setLastOrderCount(orders.length);
-    }
-  }, [orders.length, lastOrderCount, user, isAdmin, toast]);
-
-  // Set up real-time subscription for orders
-  useEffect(() => {
-    if (!user || !isAdmin) return;
-
-    const channel = supabase
-      .channel('admin-new-orders')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'orders'
-        },
-        (payload) => {
-          console.log('New order received:', payload);
-          // Refresh dashboard data
-          fetchDashboardData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'car_orders'
-        },
-        (payload) => {
-          console.log('New car order received:', payload);
-          // Refresh dashboard data
-          fetchDashboardData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, isAdmin, fetchDashboardData]);
+  }, [unreadCount, fetchDashboardData]);
 
   if (loading) {
     return (
@@ -176,7 +93,7 @@ const AdminDashboard = () => {
           <TabsTrigger value="orders" className="flex items-center gap-2 relative">
             <ShoppingBag className="h-4 w-4" />
             Orders
-            {hasNewOrders && (
+            {unreadCount > 0 && (
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
             )}
           </TabsTrigger>
@@ -202,7 +119,7 @@ const AdminDashboard = () => {
           <UserManagement users={users} />
         </TabsContent>
 
-        <TabsContent value="orders" className="space-y-4" onClick={() => setHasNewOrders(false)}>
+        <TabsContent value="orders" className="space-y-4">
           <OrderManagement orders={orders} onUpdateOrderStatus={updateOrderStatus} />
         </TabsContent>
 

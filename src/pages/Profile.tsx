@@ -81,25 +81,50 @@ const Profile = () => {
   const fetchUserData = async () => {
     try {
       // Fetch profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
+      console.log('Profile fetch result:', { profileData, profileError });
+      
       if (profileData) {
         setProfile(profileData);
+      } else {
+        // Initialize empty profile if none exists
+        setProfile({
+          id: '',
+          user_id: user?.id || '',
+          display_name: '',
+          phone_number: '',
+          telegram_username: '',
+          profile_picture_url: null,
+        });
       }
 
       // Fetch user info
-      const { data: userInfoData } = await supabase
+      const { data: userInfoData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
+
+      console.log('User fetch result:', { userInfoData, userError });
 
       if (userInfoData) {
         setUserInfo(userInfoData);
+      } else {
+        // Initialize empty user info if none exists
+        setUserInfo({
+          id: user?.id || '',
+          username: '',
+          age: null,
+          gender: null,
+          relationship_status: null,
+          bio: null,
+          avatar_url: null,
+        });
       }
 
       // Fetch orders with product details
@@ -150,24 +175,30 @@ const Profile = () => {
   };
 
   const updateProfile = async () => {
-    if (!profile || !userInfo) return;
+    if (!profile || !userInfo) {
+      console.log('Cannot save - missing data:', { profile, userInfo });
+      return;
+    }
 
+    console.log('Attempting to save profile:', { profile, userInfo });
     setSaving(true);
     try {
       // Update or insert profile
-      const { error: profileError } = await supabase
+      const { data: profileResult, error: profileError } = await supabase
         .from('profiles')
         .upsert({
           user_id: user?.id,
           display_name: profile.display_name,
           phone_number: profile.phone_number,
           telegram_username: profile.telegram_username,
-        });
+        })
+        .select();
 
+      console.log('Profile upsert result:', { profileResult, profileError });
       if (profileError) throw profileError;
 
       // Update or insert user info
-      const { error: userError } = await supabase
+      const { data: userResult, error: userError } = await supabase
         .from('users')
         .upsert({
           id: user?.id,
@@ -176,14 +207,19 @@ const Profile = () => {
           gender: userInfo.gender,
           relationship_status: userInfo.relationship_status,
           bio: userInfo.bio,
-        });
+        })
+        .select();
 
+      console.log('User upsert result:', { userResult, userError });
       if (userError) throw userError;
 
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
       });
+      
+      // Refresh data to show updated information
+      fetchUserData();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({

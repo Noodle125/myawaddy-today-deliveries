@@ -1207,9 +1207,9 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
-          phone_number: string
+          phone_number: string | null
           profile_picture_url: string | null
-          telegram_username: string
+          telegram_username: string | null
           updated_at: string
           user_id: string
         }
@@ -1217,9 +1217,9 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
-          phone_number: string
+          phone_number?: string | null
           profile_picture_url?: string | null
-          telegram_username: string
+          telegram_username?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1227,9 +1227,9 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
-          phone_number?: string
+          phone_number?: string | null
           profile_picture_url?: string | null
-          telegram_username?: string
+          telegram_username?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1387,7 +1387,7 @@ export type Database = {
           payment_status: string | null
           premium_expiry: string | null
           relationship_status: string | null
-          username: string
+          username: string | null
         }
         Insert: {
           age?: number | null
@@ -1401,7 +1401,7 @@ export type Database = {
           payment_status?: string | null
           premium_expiry?: string | null
           relationship_status?: string | null
-          username: string
+          username?: string | null
         }
         Update: {
           age?: number | null
@@ -1415,7 +1415,7 @@ export type Database = {
           payment_status?: string | null
           premium_expiry?: string | null
           relationship_status?: string | null
-          username?: string
+          username?: string | null
         }
         Relationships: []
       }

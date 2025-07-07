@@ -14,7 +14,7 @@ import { CodeManagement } from '@/components/admin/CodeManagement';
 import { Analytics } from '@/components/admin/Analytics';
 
 // Import custom hooks
-import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useAdminDashboard } from '@/hooks/admin/useAdminDashboard';
 import { useAdminActions } from '@/hooks/useAdminActions';
 
 const AdminDashboard = () => {

@@ -132,6 +132,8 @@ export const useNotifications = () => {
 
     fetchNotifications();
 
+    console.log('Setting up notification subscription for user:', user.id);
+    
     const channel = supabase
       .channel('user-notifications')
       .on(
@@ -143,18 +145,22 @@ export const useNotifications = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('Real-time notification payload received:', payload);
           const newNotification = payload.new as Notification;
           
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
           // Play sound and show toast for order notifications
-          console.log('New notification received:', newNotification);
+          console.log('Processing new notification:', newNotification);
           
           if (newNotification.type === 'order') {
+            console.log('Order notification detected, playing sound and showing toast');
+            
+            // Play notification sound
             try {
               playNotificationSound();
-              console.log('Notification sound played');
+              console.log('Notification sound played successfully');
             } catch (soundError) {
               console.error('Error playing notification sound:', soundError);
             }
@@ -169,20 +175,23 @@ export const useNotifications = () => {
               description: orderDetails,
               duration: 8000,
             });
-            console.log('Order notification toast shown');
+            console.log('Order notification toast displayed');
           } else {
             toast({
               title: newNotification.title,
               description: newNotification.message,
               duration: 5000,
             });
-            console.log('General notification toast shown');
+            console.log('General notification toast displayed');
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Notification subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up notification subscription');
       supabase.removeChannel(channel);
     };
   }, [user, toast]);

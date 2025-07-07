@@ -187,36 +187,51 @@ const Profile = () => {
     setSaving(true);
     
     try {
-      // Save profile data
-      if (profile) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            user_id: user.id,
-            display_name: profile.display_name || '',
-            phone_number: profile.phone_number || '',
-            telegram_username: profile.telegram_username || '',
-          });
+      console.log('Starting profile update for user:', user.id);
+      
+      // Save profile data with proper upsert
+      const profileData = {
+        user_id: user.id,
+        display_name: profile?.display_name || '',
+        phone_number: profile?.phone_number || '',
+        telegram_username: profile?.telegram_username || '',
+      };
+      
+      console.log('Upserting profile data:', profileData);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(profileData, {
+          onConflict: 'user_id'
+        });
 
-        if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile upsert error:', profileError);
+        throw profileError;
       }
 
-      // Save user data
-      if (userInfo) {
-        const { error: userError } = await supabase
-          .from('users')
-          .upsert({
-            id: user.id,
-            username: userInfo.username || '',
-            age: userInfo.age,
-            gender: userInfo.gender,
-            relationship_status: userInfo.relationship_status,
-            bio: userInfo.bio,
-          });
+      // Save user data with proper upsert
+      const userData = {
+        id: user.id,
+        username: userInfo?.username || '',
+        age: userInfo?.age || null,
+        gender: userInfo?.gender || null,
+        relationship_status: userInfo?.relationship_status || null,
+        bio: userInfo?.bio || null,
+      };
+      
+      console.log('Upserting user data:', userData);
+      const { error: userError } = await supabase
+        .from('users')
+        .upsert(userData, {
+          onConflict: 'id'
+        });
 
-        if (userError) throw userError;
+      if (userError) {
+        console.error('User upsert error:', userError);
+        throw userError;
       }
 
+      console.log('Profile update successful');
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
@@ -227,7 +242,7 @@ const Profile = () => {
       console.error('Error updating profile:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update profile. Please try again.",
+        description: `Failed to update profile: ${error.message || 'Please try again.'}`,
         variant: "destructive",
       });
     } finally {

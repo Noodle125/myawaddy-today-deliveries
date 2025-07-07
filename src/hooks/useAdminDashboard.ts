@@ -63,10 +63,14 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
           username,
           created_at,
           display_name,
-          bio
+          bio,
+          avatar_url,
+          age,
+          gender,
+          relationship_status
         `)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
       
       if (usersResult.error) throw usersResult.error;
 
@@ -149,7 +153,8 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
           price,
           products (
             name,
-            type
+            type,
+            image_url
           )
         `);
       
@@ -164,7 +169,8 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
             quantity: item.quantity,
             price: item.price,
             product_name: item.products?.name,
-            product_type: item.products?.type
+            product_type: item.products?.type,
+            product_image: item.products?.image_url
           }))
         };
       });

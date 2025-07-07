@@ -17,6 +17,10 @@ export interface User {
   phone_number?: string;
   telegram_username?: string;
   profile_picture_url?: string;
+  avatar_url?: string;
+  age?: number;
+  gender?: string;
+  relationship_status?: string;
 }
 
 export interface OrderItem {
@@ -24,6 +28,7 @@ export interface OrderItem {
   price: number;
   product_name?: string;
   product_type?: string;
+  product_image?: string;
 }
 
 export interface Order {

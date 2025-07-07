@@ -30,17 +30,20 @@ export const UserManagement = ({ users }: UserManagementProps) => {
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profile_picture_url} />
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={user.avatar_url || user.profile_picture_url} />
                       <AvatarFallback>
-                        {user.username?.slice(0, 2).toUpperCase()}
+                        {user.username?.slice(0, 2).toUpperCase() || user.display_name?.slice(0, 2).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{user.username}</p>
+                      <p className="font-medium">{user.username || user.display_name || 'Anonymous'}</p>
                       <p className="text-xs text-muted-foreground">
                         ID: {user.id.slice(0, 8)}...
                       </p>
+                      {user.age && (
+                        <p className="text-xs text-muted-foreground">Age: {user.age}</p>
+                      )}
                     </div>
                   </div>
                 </TableCell>
@@ -71,7 +74,13 @@ export const UserManagement = ({ users }: UserManagementProps) => {
                         {user.bio}
                       </p>
                     )}
-                    {!user.display_name && !user.profile_display_name && !user.bio && (
+                    {user.gender && (
+                      <p className="text-xs text-muted-foreground">Gender: {user.gender}</p>
+                    )}
+                    {user.relationship_status && (
+                      <p className="text-xs text-muted-foreground">Status: {user.relationship_status}</p>
+                    )}
+                    {!user.display_name && !user.profile_display_name && !user.bio && !user.gender && !user.relationship_status && (
                       <p className="text-xs text-muted-foreground">No profile info</p>
                     )}
                   </div>

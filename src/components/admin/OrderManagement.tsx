@@ -157,7 +157,7 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
                         order.items.map((item, idx) => (
                           <div key={idx} className="flex items-center gap-3">
                             <img
-                              src={'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
+                              src={item.product_image || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
                               alt={item.product_name || 'Product'}
                               className="w-12 h-12 object-cover rounded-md"
                             />

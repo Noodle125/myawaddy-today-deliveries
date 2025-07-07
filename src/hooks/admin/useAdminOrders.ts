@@ -61,18 +61,26 @@ export const useAdminOrders = () => {
       
       if (orderItemsResult.error) throw orderItemsResult.error;
 
+      console.log('Order items raw data:', orderItemsResult.data);
+
       // Combine regular orders and car orders with enhanced data
       const regularOrdersWithItems = (ordersResult.data || []).map(order => {
         const items = (orderItemsResult.data || []).filter(item => item.order_id === order.id);
+        console.log(`Order ${order.id} items:`, items);
+        
         return {
           ...order,
-          items: items.map(item => ({
-            quantity: item.quantity,
-            price: item.price,
-            product_name: item.products?.name,
-            product_type: item.products?.type,
-            product_image: item.products?.image_url
-          }))
+          items: items.map(item => {
+            // Handle the nested products structure correctly
+            const product = Array.isArray(item.products) ? item.products[0] : item.products;
+            return {
+              quantity: item.quantity,
+              price: item.price,
+              product_name: product?.name || 'Unknown Product',
+              product_type: product?.type || 'Unknown Type',
+              product_image: product?.image_url || null
+            };
+          })
         };
       });
 

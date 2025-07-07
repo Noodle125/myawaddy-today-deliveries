@@ -132,7 +132,7 @@ export const useNotifications = () => {
 
     fetchNotifications();
 
-    console.log('Setting up notification subscription for user:', user.id);
+    console.log('Setting up notification subscription for user:', user.id, 'isAdmin:', isAdmin);
     
     const channel = supabase
       .channel('user-notifications')
@@ -157,13 +157,29 @@ export const useNotifications = () => {
           if (newNotification.type === 'order') {
             console.log('Order notification detected, playing sound and showing toast');
             
-            // Play notification sound
-            try {
-              playNotificationSound();
-              console.log('Notification sound played successfully');
-            } catch (soundError) {
-              console.error('Error playing notification sound:', soundError);
-            }
+            // Request audio permissions and play sound
+            const playSound = async () => {
+              try {
+                // Check if user has interacted with the page (required for autoplay)
+                if (document.visibilityState === 'visible') {
+                  playNotificationSound();
+                  console.log('Notification sound played successfully');
+                } else {
+                  console.log('Page not visible, skipping sound');
+                }
+              } catch (soundError) {
+                console.error('Error playing notification sound:', soundError);
+                // Try alternative notification methods
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  new Notification(newNotification.title, {
+                    body: newNotification.message,
+                    icon: '/favicon.ico'
+                  });
+                }
+              }
+            };
+
+            playSound();
             
             const orderData = newNotification.metadata || {};
             const orderDetails = orderData.car_order_id 
@@ -188,13 +204,25 @@ export const useNotifications = () => {
       )
       .subscribe((status) => {
         console.log('Notification subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to notifications');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Error with notification subscription channel');
+        }
       });
+
+    // Request browser notification permissions for admin users
+    if (isAdmin && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('Notification permission:', permission);
+      });
+    }
 
     return () => {
       console.log('Cleaning up notification subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, toast]);
+  }, [user, toast, isAdmin]);
 
   return {
     notifications,

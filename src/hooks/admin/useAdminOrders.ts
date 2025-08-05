@@ -46,6 +46,9 @@ export const useAdminOrders = () => {
       
       if (carOrdersResult.error) throw carOrdersResult.error;
 
+      // Get order IDs to filter order items
+      const orderIds = (ordersResult.data || []).map(order => order.id);
+      
       const orderItemsResult = await supabase
         .from('order_items')
         .select(`
@@ -57,7 +60,8 @@ export const useAdminOrders = () => {
             type,
             image_url
           )
-        `);
+        `)
+        .in('order_id', orderIds);
       
       if (orderItemsResult.error) throw orderItemsResult.error;
 

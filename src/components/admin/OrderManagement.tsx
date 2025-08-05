@@ -143,7 +143,7 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
                         <p className="text-sm"><span className="font-medium">Username:</span> {customerProfiles[order.user_id].username || 'N/A'}</p>
                       </div>
                     ) : (
-                      <p className="text-sm">Loading customer information...</p>
+                      <p className="text-sm">Loading...</p>
                     )}
                   </div>
                 )}

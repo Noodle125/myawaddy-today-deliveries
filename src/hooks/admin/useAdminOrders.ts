@@ -46,22 +46,25 @@ export const useAdminOrders = () => {
       
       if (carOrdersResult.error) throw carOrdersResult.error;
 
-      // Get order IDs to filter order items
+      // Get order IDs to filter order items  
       const orderIds = (ordersResult.data || []).map(order => order.id);
       
-      const orderItemsResult = await supabase
-        .from('order_items')
-        .select(`
-          order_id,
-          quantity,
-          price,
-          products (
-            name,
-            type,
-            image_url
-          )
-        `)
-        .in('order_id', orderIds);
+      let orderItemsResult = { data: [], error: null };
+      if (orderIds.length > 0) {
+        orderItemsResult = await supabase
+          .from('order_items')
+          .select(`
+            order_id,
+            quantity,
+            price,
+            products (
+              name,
+              type,
+              image_url
+            )
+          `)
+          .in('order_id', orderIds);
+      }
       
       if (orderItemsResult.error) throw orderItemsResult.error;
 

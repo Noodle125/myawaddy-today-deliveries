@@ -88,7 +88,10 @@ const Rewards = () => {
   };
 
   const redeemCode = async () => {
-    if (!codeInput.trim()) {
+    // Enhanced input validation and sanitization
+    const sanitizedCode = codeInput?.trim().toUpperCase();
+    
+    if (!sanitizedCode || sanitizedCode.length === 0) {
       toast({
         title: "Invalid Code",
         description: "Please enter a valid code.",
@@ -97,15 +100,40 @@ const Rewards = () => {
       return;
     }
 
+    // Basic format validation
+    if (sanitizedCode.length < 3 || sanitizedCode.length > 50) {
+      toast({
+        title: "Invalid Code",
+        description: "Invalid code format.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Rate limiting check - prevent rapid redemption attempts
+    const now = Date.now();
+    const lastRedemption = localStorage.getItem('lastRedemptionAttempt');
+    if (lastRedemption && now - parseInt(lastRedemption) < 3000) {
+      toast({
+        title: "Error",
+        description: "Please wait before trying another code.",
+        variant: "destructive",
+      });
+      return;
+    }
+    localStorage.setItem('lastRedemptionAttempt', now.toString());
+
     setRedeeming(true);
     try {
       // Check if code exists and is unused
-      const { data: codeData } = await supabase
+      const { data: codeData, error: codeError } = await supabase
         .from('cashback_codes')
         .select('*')
-        .eq('code', codeInput.trim())
+        .eq('code', sanitizedCode)
         .eq('is_used', false)
-        .single();
+        .maybeSingle();
+
+      if (codeError) throw codeError;
 
       if (!codeData) {
         toast({

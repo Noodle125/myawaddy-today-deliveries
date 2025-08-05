@@ -37,10 +37,21 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
   };
 
   const generateCashbackCodes = async (codeType: string, codeCount: number) => {
-    if (!codeType || codeCount < 1) {
+    // Enhanced input validation
+    const sanitizedType = codeType?.trim();
+    if (!sanitizedType || sanitizedType.length === 0) {
       toast({
         title: "Invalid Input",
-        description: "Please enter a valid code type and count.",
+        description: "Please enter a valid code type.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (codeCount < 1 || codeCount > 1000) {
+      toast({
+        title: "Invalid Input",
+        description: "Code count must be between 1 and 1000.",
         variant: "destructive",
       });
       return;
@@ -49,10 +60,14 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
     try {
       const codes = [];
       for (let i = 0; i < codeCount; i++) {
-        const code = `${codeType.toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        // Use cryptographically secure random generation
+        const array = new Uint8Array(12);
+        crypto.getRandomValues(array);
+        const randomHex = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        const code = `${sanitizedType.toUpperCase()}-${randomHex.substring(0, 8).toUpperCase()}`;
         codes.push({
           code,
-          type: codeType,
+          type: sanitizedType,
         });
       }
 
@@ -104,10 +119,32 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
   };
 
   const createCategory = async (name: string, type: string) => {
-    if (!name.trim()) {
+    // Enhanced input validation and sanitization
+    const sanitizedName = name?.trim();
+    const sanitizedType = type?.trim();
+    
+    if (!sanitizedName || sanitizedName.length === 0) {
       toast({
         title: "Invalid Input",
         description: "Please enter a category name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!sanitizedType || sanitizedType.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a category type.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (sanitizedName.length > 100) {
+      toast({
+        title: "Invalid Input",
+        description: "Category name must be less than 100 characters.",
         variant: "destructive",
       });
       return;
@@ -117,15 +154,15 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       const { error } = await supabase
         .from('categories')
         .insert({
-          name,
-          type,
+          name: sanitizedName,
+          type: sanitizedType,
         });
 
       if (error) throw error;
 
       toast({
         title: "Category Created",
-        description: `Category "${name}" has been created successfully.`,
+        description: `Category "${sanitizedName}" has been created successfully.`,
       });
 
       fetchDashboardData();
@@ -140,10 +177,56 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
   };
 
   const createProduct = async (productData: any) => {
-    if (!productData.name.trim() || !productData.price || !productData.category_id) {
+    // Enhanced input validation and sanitization
+    const sanitizedData = {
+      name: productData.name?.trim(),
+      description: productData.description?.trim(),
+      price: productData.price ? parseFloat(productData.price) : null,
+      type: productData.type?.trim(),
+      category_id: productData.category_id,
+      image_url: productData.image_url?.trim()
+    };
+
+    if (!sanitizedData.name || sanitizedData.name.length === 0) {
       toast({
         title: "Invalid Input",
-        description: "Please fill in all required fields.",
+        description: "Product name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!sanitizedData.type || sanitizedData.type.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Product type is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!sanitizedData.price || isNaN(sanitizedData.price) || sanitizedData.price <= 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Valid product price is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!sanitizedData.category_id) {
+      toast({
+        title: "Invalid Input",
+        description: "Product category is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (sanitizedData.name.length > 200) {
+      toast({
+        title: "Invalid Input",
+        description: "Product name must be less than 200 characters.",
         variant: "destructive",
       });
       return;
@@ -153,19 +236,19 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       const { error } = await supabase
         .from('products')
         .insert({
-          name: productData.name,
-          description: productData.description,
-          price: parseFloat(productData.price),
-          image_url: productData.image_url,
-          category_id: productData.category_id,
-          type: productData.type,
+          name: sanitizedData.name,
+          description: sanitizedData.description,
+          price: sanitizedData.price,
+          image_url: sanitizedData.image_url,
+          category_id: sanitizedData.category_id,
+          type: sanitizedData.type,
         });
 
       if (error) throw error;
 
       toast({
         title: "Product Created",
-        description: `Product "${productData.name}" has been created successfully.`,
+        description: `Product "${sanitizedData.name}" has been created successfully.`,
       });
 
       fetchDashboardData();

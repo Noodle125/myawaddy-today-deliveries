@@ -39,20 +39,22 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
       
       if (userIds.length === 0) return;
 
-      // Fetch profiles and user info
-      const [profilesResponse, usersResponse] = await Promise.all([
-        supabase.from('profiles').select('*').in('user_id', userIds),
-        supabase.from('users').select('id, username').in('id', userIds)
-      ]);
+      // Fetch user info (users table has the main user data)
+      const usersResponse = await supabase
+        .from('users')
+        .select('id, username, display_name, avatar_url, created_at, bio, age, gender, relationship_status')
+        .in('id', userIds);
 
-      if (profilesResponse.data && usersResponse.data) {
+      if (usersResponse.data) {
         const profilesMap: {[key: string]: CustomerProfile} = {};
         
-        profilesResponse.data.forEach(profile => {
-          const userInfo = usersResponse.data?.find(u => u.id === profile.user_id);
-          profilesMap[profile.user_id] = {
-            ...profile,
-            username: userInfo?.username
+        usersResponse.data.forEach(user => {
+          profilesMap[user.id] = {
+            user_id: user.id,
+            display_name: user.display_name,
+            phone_number: '', // Not available in users table
+            telegram_username: user.username || '',
+            username: user.username
           };
         });
         

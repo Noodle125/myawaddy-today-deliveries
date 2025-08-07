@@ -12,6 +12,7 @@ import { ProductManagement } from '@/components/admin/ProductManagement';
 import { CategoryManagement } from '@/components/admin/CategoryManagement';
 import { CodeManagement } from '@/components/admin/CodeManagement';
 import { Analytics } from '@/components/admin/Analytics';
+import { NotificationSettings } from '@/components/admin/NotificationSettings';
 
 // Import custom hooks
 import { useAdminDashboard } from '@/hooks/admin/useAdminDashboard';
@@ -85,7 +86,7 @@ const AdminDashboard = () => {
       <DashboardStats stats={stats} orders={orders} />
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Users
@@ -116,6 +117,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -152,6 +157,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="analytics" className="space-y-4">
           <Analytics orders={orders} />
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4">
+          <NotificationSettings />
         </TabsContent>
       </Tabs>
     </div>

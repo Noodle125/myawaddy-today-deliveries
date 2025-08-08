@@ -150,39 +150,11 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
                   </div>
                 )}
 
-                {/* Product Details - Only for shop orders */}
+                {/* Product Details - Only for shop/food orders */}
                 {order.order_type !== 'car' && (
                   <div className="p-4">
                     <h4 className="font-medium text-sm text-muted-foreground mb-3">Items Ordered:</h4>
-                    <div className="space-y-3">
-                      {order.items && order.items.length > 0 ? (
-                        order.items.map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-3">
-                            <img
-                              src={item.product_image || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
-                              alt={item.product_name || 'Product'}
-                              className="w-12 h-12 object-cover rounded-md"
-                            />
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">{item.product_name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {item.product_type && (
-                                  <Badge variant="outline" className="text-xs mr-2">
-                                    {item.product_type}
-                                  </Badge>
-                                )}
-                                Qty: {item.quantity} × {item.price.toLocaleString()} MMK
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-medium text-sm">{(item.price * item.quantity).toLocaleString()} MMK</p>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-muted-foreground">No items found</p>
-                      )}
-                    </div>
+                    <OrderItemsList order={order} />
                   </div>
                 )}
               </div>
@@ -193,3 +165,69 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
     </Card>
   );
 };
+
+function OrderItemsList({ order }: { order: Order }) {
+  const [items, setItems] = useState(order.items ?? []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (order.order_type === 'car') return;
+      if (items && items.length > 0) return;
+      const { data } = await supabase
+        .from('order_items')
+        .select(`quantity, price, products(name,type,image_url)`) 
+        .eq('order_id', order.id);
+      if (!cancelled && data) {
+        const mapped = (data as any[]).map((it: any) => {
+          const product = Array.isArray(it.products) ? it.products[0] : it.products;
+          return {
+            quantity: it.quantity,
+            price: it.price,
+            product_name: product?.name || 'Unknown Product',
+            product_type: product?.type || undefined,
+            product_image: product?.image_url || null,
+          };
+        });
+        setItems(mapped);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [order.id]);
+
+  if (!items || items.length === 0) {
+    return <p className="text-xs text-muted-foreground">No items found</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((item: any, idx: number) => (
+        <div key={idx} className="flex items-center gap-3">
+          <img
+            src={item.product_image || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
+            alt={item.product_name || 'Product'}
+            className="w-12 h-12 object-cover rounded-md"
+            loading="lazy"
+          />
+          <div className="flex-1">
+            <p className="font-medium text-sm">{item.product_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {item.product_type && (
+                <Badge variant="outline" className="text-xs mr-2">
+                  {item.product_type}
+                </Badge>
+              )}
+              Qty: {item.quantity} × {Number(item.price).toLocaleString()} MMK
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="font-medium text-sm">
+              {(Number(item.price) * Number(item.quantity)).toLocaleString()} MMK
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

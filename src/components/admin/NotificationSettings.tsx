@@ -14,10 +14,7 @@ interface SoundOptionBase {
 
 type FileOption = SoundOptionBase & { mode: "file"; src: string };
 
-type PresetOption = SoundOptionBase & { mode: "preset"; preset: Exclude<
-  NotificationSoundSetting,
-  { mode: "file" }
-> extends { preset: infer P } ? P : never };
+type PresetOption = SoundOptionBase & { mode: "preset"; preset: 'bell' | 'chime' | 'pop' | 'ding' | 'digital' };
 
 const SOUND_OPTIONS: Array<FileOption | PresetOption> = [
   { id: "classic", label: "Classic (file)", mode: "file", src: "/notification.mp3" },
@@ -38,7 +35,7 @@ export function NotificationSettings() {
   useEffect(() => {
     const loadSetting = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("app_settings")
           .select("value")
           .eq("key", "notification_sound")
@@ -72,7 +69,7 @@ export function NotificationSettings() {
       if (selectedOption.mode === "file") {
         await playNotificationSoundFromFile(selectedOption.src);
       } else {
-        await playNotificationPreset(selectedOption.preset);
+        await playNotificationPreset((selectedOption as PresetOption).preset);
       }
     } catch (e) {
       console.error("Preview error", e);
@@ -82,26 +79,26 @@ export function NotificationSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const value: NotificationSoundSetting =
+      const value =
         selectedOption.mode === "file"
           ? { mode: "file", src: (selectedOption as FileOption).src }
-          : { mode: "preset", preset: (selectedOption as PresetOption).preset } as NotificationSoundSetting;
+          : { mode: "preset", preset: (selectedOption as PresetOption).preset };
 
       // Upsert-like behavior (since app_settings may not have a unique key)
-      const { data: existing } = await supabase
+      const { data: existing } = await (supabase as any)
         .from("app_settings")
         .select("key")
         .eq("key", "notification_sound")
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("app_settings")
           .update({ value, updated_at: new Date().toISOString() })
           .eq("key", "notification_sound");
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("app_settings")
           .insert({ key: "notification_sound", value });
         if (error) throw error;

@@ -49,7 +49,7 @@ export const playNotificationSoundFromFile = async (src: string) => {
 };
 
 export const playNotificationPreset = async (
-  preset: NotificationSoundSetting extends { mode: 'preset'; preset: infer P } ? P : never
+  preset: 'bell' | 'chime' | 'pop' | 'ding' | 'digital'
 ) => {
   try {
     const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;

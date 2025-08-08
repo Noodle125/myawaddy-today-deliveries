@@ -168,33 +168,61 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
 
 function OrderItemsList({ order }: { order: Order }) {
   const [items, setItems] = useState(order.items ?? []);
+  const [loading, setLoading] = useState(!order.items || order.items.length === 0);
 
   useEffect(() => {
     let cancelled = false;
+
     const load = async () => {
       if (order.order_type === 'car') return;
-      if (items && items.length > 0) return;
-      const { data } = await supabase
-        .from('order_items')
-        .select(`quantity, price, products(name,type,image_url)`) 
-        .eq('order_id', order.id);
-      if (!cancelled && data) {
-        const mapped = (data as any[]).map((it: any) => {
-          const product = Array.isArray(it.products) ? it.products[0] : it.products;
-          return {
-            quantity: it.quantity,
-            price: it.price,
-            product_name: product?.name || 'Unknown Product',
-            product_type: product?.type || undefined,
-            product_image: product?.image_url || null,
-          };
-        });
-        setItems(mapped);
+
+      // If items are already present (from prefetch), skip network and stop loading
+      if (items && items.length > 0) {
+        setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      console.log('[OrderItemsList] Fetching items for order:', order.id);
+
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`quantity, price, products(name,type,image_url)`)
+        .eq('order_id', order.id);
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error('[OrderItemsList] Failed to fetch items for order', order.id, error);
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      const mapped = (data as any[] || []).map((it: any) => {
+        const product = Array.isArray(it.products) ? it.products[0] : it.products;
+        return {
+          quantity: it.quantity,
+          price: it.price,
+          product_name: product?.name || 'Unknown Product',
+          product_type: product?.type || undefined,
+          product_image: product?.image_url || null,
+        };
+      });
+
+      setItems(mapped);
+      setLoading(false);
     };
+
     load();
-    return () => { cancelled = true; };
-  }, [order.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [order.id, order.order_type]); // re-run when a different order instance mounts
+
+  if (loading) {
+    return <p className="text-xs text-muted-foreground">Loading items...</p>;
+  }
 
   if (!items || items.length === 0) {
     return <p className="text-xs text-muted-foreground">No items found</p>;
@@ -212,14 +240,16 @@ function OrderItemsList({ order }: { order: Order }) {
           />
           <div className="flex-1">
             <p className="font-medium text-sm">{item.product_name}</p>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
               {item.product_type && (
-                <Badge variant="outline" className="text-xs mr-2">
+                <Badge variant="outline" className="text-xs">
                   {item.product_type}
                 </Badge>
               )}
-              Qty: {item.quantity} × {Number(item.price).toLocaleString()} MMK
-            </p>
+              <span>
+                Qty: {item.quantity} × {Number(item.price).toLocaleString()} MMK
+              </span>
+            </div>
           </div>
           <div className="text-right">
             <p className="font-medium text-sm">

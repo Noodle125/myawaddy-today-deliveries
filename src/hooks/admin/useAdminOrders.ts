@@ -7,7 +7,7 @@ export const useAdminOrders = () => {
 
   const fetchOrders = useCallback(async () => {
     try {
-      // Fetch recent orders with more details - sequential to avoid overwhelming connection
+      // Fetch recent orders - simplified without complex JOINs to avoid RLS issues
       const ordersResult = await supabase
         .from('orders')
         .select(`
@@ -46,50 +46,10 @@ export const useAdminOrders = () => {
       
       if (carOrdersResult.error) throw carOrdersResult.error;
 
-      // Get order IDs to filter order items  
-      const orderIds = (ordersResult.data || []).map(order => order.id);
-      
-      let orderItemsResult = { data: [], error: null };
-      if (orderIds.length > 0) {
-        orderItemsResult = await supabase
-          .from('order_items')
-          .select(`
-            order_id,
-            quantity,
-            price,
-            products (
-              name,
-              type,
-              image_url
-            )
-          `)
-          .in('order_id', orderIds);
-      }
-      
-      if (orderItemsResult.error) throw orderItemsResult.error;
-
-      console.log('Order items raw data:', orderItemsResult.data);
-
-      // Combine regular orders and car orders with enhanced data
-      const regularOrdersWithItems = (ordersResult.data || []).map(order => {
-        const items = (orderItemsResult.data || []).filter(item => item.order_id === order.id);
-        console.log(`Order ${order.id} items:`, items);
-        
-        return {
-          ...order,
-          items: items.map(item => {
-            // Handle the nested products structure correctly
-            const product = Array.isArray(item.products) ? item.products[0] : item.products;
-            return {
-              quantity: item.quantity,
-              price: item.price,
-              product_name: product?.name || 'Unknown Product',
-              product_type: product?.type || 'Unknown Type',
-              product_image: product?.image_url || null
-            };
-          })
-        };
-      });
+      // Let OrderItemsList component handle item fetching to avoid RLS JOIN issues
+      const regularOrdersWithItems = (ordersResult.data || []).map(order => ({
+        ...order
+      }));
 
       const carOrdersFormatted = (carOrdersResult.data || []).map(carOrder => ({
         id: carOrder.id,

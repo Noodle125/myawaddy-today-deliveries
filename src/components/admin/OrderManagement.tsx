@@ -234,12 +234,14 @@ function OrderItemsList({ order }: { order: Order }) {
       // 3) Merge and map to display-friendly items
       const mapped = rows.map((it: any) => {
         const p = it.product_id ? productMap[it.product_id] : undefined;
+        const imageUrl = it.product_image || p?.image_url;
+        
         return {
           quantity: it.quantity,
           price: it.price,
           product_name: it.product_name || p?.name || 'Unknown Product',
           product_type: it.product_type || p?.type || undefined,
-          product_image: it.product_image || p?.image_url || null,
+          product_image: imageUrl || '/placeholder.svg', // Always provide fallback
         };
       });
 

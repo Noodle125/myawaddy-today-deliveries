@@ -154,7 +154,7 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
                 {order.order_type !== 'car' && (
                   <div className="p-4">
                     <h4 className="font-medium text-sm text-muted-foreground mb-3">Items Ordered:</h4>
-                    <OrderItemsList order={order} />
+                    <OrderItemsList key={order.id} order={order} />
                   </div>
                 )}
               </div>
@@ -185,28 +185,61 @@ function OrderItemsList({ order }: { order: Order }) {
       setLoading(true);
       console.log('[OrderItemsList] Fetching items for order:', order.id);
 
-      const { data, error } = await supabase
+      // 1) Fetch raw order_items rows to avoid relying on FK relationship config
+      const { data: rawItems, error: itemsError } = await supabase
         .from('order_items')
-        .select(`quantity, price, products(name,type,image_url)`)
+        .select('*')
         .eq('order_id', order.id);
 
       if (cancelled) return;
 
-      if (error) {
-        console.error('[OrderItemsList] Failed to fetch items for order', order.id, error);
+      if (itemsError) {
+        console.error('[OrderItemsList] Failed to fetch order_items for order', order.id, itemsError);
         setItems([]);
         setLoading(false);
         return;
       }
 
-      const mapped = (data as any[] || []).map((it: any) => {
-        const product = Array.isArray(it.products) ? it.products[0] : it.products;
+      const rows = (rawItems as any[]) || [];
+      console.log('[OrderItemsList] order_items rows:', rows);
+
+      // 2) Collect product_ids and fetch product details in one go
+      const productIds = Array.from(
+        new Set(
+          rows
+            .map((r: any) => r.product_id)
+            .filter((pid: any) => typeof pid === 'string' && pid.length > 0)
+        )
+      );
+
+      let productMap: Record<string, any> = {};
+      if (productIds.length > 0) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id, name, type, image_url')
+          .in('id', productIds);
+
+        if (!cancelled) {
+          if (productsError) {
+            console.error('[OrderItemsList] Failed to fetch products for order', order.id, productsError);
+          } else {
+            productMap = (products || []).reduce((acc: Record<string, any>, p: any) => {
+              acc[p.id] = p;
+              return acc;
+            }, {});
+          }
+        }
+      }
+
+      // 3) Merge and map to display-friendly items
+      const mapped = rows.map((it: any) => {
+        const p = it.product_id ? productMap[it.product_id] : undefined;
         return {
           quantity: it.quantity,
           price: it.price,
-          product_name: product?.name || 'Unknown Product',
-          product_type: product?.type || undefined,
-          product_image: product?.image_url || null,
+          product_name: it.product_name || p?.name || 'Unknown Product',
+          product_type: it.product_type || p?.type || undefined,
+          product_image: it.product_image || p?.image_url || null,
         };
       });
 

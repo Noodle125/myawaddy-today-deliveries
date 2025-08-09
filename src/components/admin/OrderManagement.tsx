@@ -185,79 +185,91 @@ function OrderItemsList({ order }: { order: Order }) {
       try {
         console.log('[OrderItemsList] Loading items for order:', order.id);
         
-        // Fetch order items with product details
+        // First, try to fetch order items directly
         const { data: orderItems, error: itemsError } = await supabase
           .from('order_items')
-          .select(`
-            id,
-            quantity,
-            price,
-            product_id,
-            products!inner (
-              id,
-              name,
-              image_url,
-              type
-            )
-          `)
+          .select('*')
           .eq('order_id', order.id);
 
         if (cancelled) return;
 
         if (itemsError) {
           console.error('[OrderItemsList] Error fetching order items:', itemsError);
-          // Fallback: try fetching without JOIN to avoid RLS issues
-          const { data: rawItems, error: rawError } = await supabase
-            .from('order_items')
-            .select('*')
-            .eq('order_id', order.id);
-
-          if (cancelled) return;
-
-          if (rawError) {
-            console.error('[OrderItemsList] Error fetching raw order items:', rawError);
-            setItems([]);
-            setLoading(false);
-            return;
-          }
-
-          // Get product details separately
-          const productIds = (rawItems || []).map(item => item.product_id).filter(Boolean);
-          let productMap: Record<string, any> = {};
-
-          if (productIds.length > 0) {
-            const { data: products } = await supabase
-              .from('products')
-              .select('id, name, image_url, type')
-              .in('id', productIds);
-
-            if (products) {
-              productMap = products.reduce((acc, product) => {
-                acc[product.id] = product;
-                return acc;
-              }, {} as Record<string, any>);
-            }
-          }
-
-          const mappedItems = (rawItems || []).map(item => {
-            const product = productMap[item.product_id];
-            return {
-              id: item.id,
-              quantity: item.quantity,
-              price: item.price,
-              product: product || {
-                name: 'Unknown Product',
-                image_url: '/placeholder.svg',
-                type: 'product'
-              }
-            };
-          });
-
-          setItems(mappedItems);
-        } else {
-          // Successfully got items with product details
-          setItems(orderItems || []);
+          setItems([]);
+          setLoading(false);
+          return;
         }
+
+        console.log('[OrderItemsList] Found order items:', orderItems?.length || 0);
+
+        if (!orderItems || orderItems.length === 0) {
+          console.log('[OrderItemsList] No order items found for order:', order.id);
+          setItems([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get product details for all items
+        const productIds = orderItems.map(item => item.product_id).filter(Boolean);
+        
+        if (productIds.length === 0) {
+          console.log('[OrderItemsList] No product IDs found in order items');
+          setItems(orderItems.map(item => ({
+            ...item,
+            product: {
+              name: 'Unknown Product',
+              image_url: '/placeholder.svg',
+              type: 'product'
+            }
+          })));
+          setLoading(false);
+          return;
+        }
+
+        // Fetch product details
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id, name, image_url, type')
+          .in('id', productIds);
+
+        if (cancelled) return;
+
+        if (productsError) {
+          console.error('[OrderItemsList] Error fetching products:', productsError);
+          // Still show items even if products fail to load
+          setItems(orderItems.map(item => ({
+            ...item,
+            product: {
+              name: 'Unknown Product',
+              image_url: '/placeholder.svg',
+              type: 'product'
+            }
+          })));
+          setLoading(false);
+          return;
+        }
+
+        console.log('[OrderItemsList] Found products:', products?.length || 0);
+
+        // Create product lookup map
+        const productMap = (products || []).reduce((acc, product) => {
+          acc[product.id] = product;
+          return acc;
+        }, {} as Record<string, any>);
+
+        // Combine order items with product details
+        const itemsWithProducts = orderItems.map(item => ({
+          ...item,
+          product: productMap[item.product_id] || {
+            name: 'Unknown Product',
+            image_url: '/placeholder.svg',
+            type: 'product'
+          }
+        }));
+
+        console.log('[OrderItemsList] Final items with products:', itemsWithProducts);
+        setItems(itemsWithProducts);
+
       } catch (error) {
         console.error('[OrderItemsList] Unexpected error:', error);
         setItems([]);
@@ -286,6 +298,7 @@ function OrderItemsList({ order }: { order: Order }) {
     return (
       <div className="text-center py-4">
         <p className="text-sm text-muted-foreground">No items found for this order</p>
+        <p className="text-xs text-muted-foreground mt-1">Order ID: {order.id}</p>
       </div>
     );
   }
@@ -293,7 +306,7 @@ function OrderItemsList({ order }: { order: Order }) {
   return (
     <div className="space-y-3">
       {items.map((item: any, idx: number) => {
-        const product = item.products || item.product;
+        const product = item.product;
         const productImage = product?.image_url || '/placeholder.svg';
         const productName = product?.name || 'Unknown Product';
         const productType = product?.type || 'product';

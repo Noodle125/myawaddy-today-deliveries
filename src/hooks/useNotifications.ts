@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { playNotificationSound } from '@/utils/notificationSound';
+import { playNotificationSound, playNotificationPreset, playNotificationSoundFromFile, NotificationSoundSetting } from '@/utils/notificationSound';
 
 interface Notification {
   id: string;
@@ -22,6 +22,31 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [soundSetting, setSoundSetting] = useState<NotificationSoundSetting | null>(null);
+
+  // Load admin sound setting
+  const loadSoundSetting = async () => {
+    if (!isAdmin) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'notification_sound')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading sound setting:', error);
+        return;
+      }
+
+      if (data?.value) {
+        setSoundSetting(data.value as NotificationSoundSetting);
+      }
+    } catch (error) {
+      console.error('Error loading sound setting:', error);
+    }
+  };
 
   // Fetch notifications with retry logic
   const fetchNotifications = async (retries = 3) => {
@@ -131,6 +156,11 @@ export const useNotifications = () => {
     if (!user) return;
 
     fetchNotifications();
+    
+    // Load sound setting for admin users
+    if (isAdmin) {
+      loadSoundSetting();
+    }
 
     console.log('Setting up notification subscription for user:', user.id, 'isAdmin:', isAdmin);
     
@@ -157,12 +187,21 @@ export const useNotifications = () => {
           if (newNotification.type === 'order') {
             console.log('Order notification detected, playing sound and showing toast');
             
-            // Request audio permissions and play sound
+            // Play admin's chosen sound
             const playSound = async () => {
               try {
                 // Check if user has interacted with the page (required for autoplay)
                 if (document.visibilityState === 'visible') {
-                  playNotificationSound();
+                  if (soundSetting) {
+                    if (soundSetting.mode === 'file') {
+                      await playNotificationSoundFromFile(soundSetting.src);
+                    } else {
+                      await playNotificationPreset(soundSetting.preset);
+                    }
+                  } else {
+                    // Fallback to default sound
+                    playNotificationSound();
+                  }
                   console.log('Notification sound played successfully');
                 } else {
                   console.log('Page not visible, skipping sound');
@@ -182,15 +221,42 @@ export const useNotifications = () => {
             playSound();
             
             const orderData = newNotification.metadata || {};
-            const orderDetails = orderData.car_order_id 
-              ? `Car Order: ${orderData.from_location} → ${orderData.to_location}\nCustomer: ${orderData.customer_name}\nContact: @${orderData.telegram_username}\nAmount: ${orderData.price?.toLocaleString()} MMK`
-              : `${orderData.order_type} Order\nAmount: ${orderData.total_amount?.toLocaleString()} MMK`;
-
-            toast({
-              title: newNotification.title,
-              description: orderDetails,
-              duration: 8000,
-            });
+            
+            // Handle car orders (existing functionality)
+            if (orderData.car_order_id) {
+              const orderDetails = `Car Order: ${orderData.from_location} → ${orderData.to_location}\nCustomer: ${orderData.customer_name}\nContact: @${orderData.telegram_username}\nAmount: ${orderData.price?.toLocaleString()} MMK`;
+              
+              toast({
+                title: newNotification.title,
+                description: orderDetails,
+                duration: 8000,
+              });
+            } else {
+              // Handle shop/food orders with product details
+              const items = orderData.items || [];
+              const itemCount = orderData.item_count || 0;
+              
+              let orderDetails = `${orderData.order_type} Order #${orderData.order_id?.substring(0, 8)}\n`;
+              orderDetails += `Items: ${itemCount} | Total: ${orderData.total_amount?.toLocaleString()} MMK\n`;
+              
+              // Add first few items for preview
+              if (items.length > 0) {
+                const previewItems = items.slice(0, 2);
+                previewItems.forEach((item: any) => {
+                  orderDetails += `• ${item.product_name} x${item.quantity} - ${item.price?.toLocaleString()} MMK\n`;
+                });
+                
+                if (items.length > 2) {
+                  orderDetails += `... and ${items.length - 2} more items`;
+                }
+              }
+              
+              toast({
+                title: newNotification.title,
+                description: orderDetails.trim(),
+                duration: 8000,
+              });
+            }
             console.log('Order notification toast displayed');
           } else {
             toast({
@@ -201,15 +267,37 @@ export const useNotifications = () => {
             console.log('General notification toast displayed');
           }
         }
-      )
-      .subscribe((status) => {
-        console.log('Notification subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to notifications');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ Error with notification subscription channel');
+      );
+
+    // Listen for sound setting changes (admin only)
+    if (isAdmin) {
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'app_settings',
+          filter: `key=eq.notification_sound`
+        },
+        (payload) => {
+          console.log('Sound setting updated:', payload);
+          const newValue = payload.new?.value as NotificationSoundSetting;
+          if (newValue) {
+            setSoundSetting(newValue);
+            console.log('Updated sound setting in real-time');
+          }
         }
-      });
+      );
+    }
+
+    channel.subscribe((status) => {
+      console.log('Notification subscription status:', status);
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ Successfully subscribed to notifications');
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Error with notification subscription channel');
+      }
+    });
 
     // Request browser notification permissions for admin users
     if (isAdmin && 'Notification' in window && Notification.permission === 'default') {
@@ -222,7 +310,7 @@ export const useNotifications = () => {
       console.log('Cleaning up notification subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, toast, isAdmin]);
+  }, [user, toast, isAdmin, soundSetting]);
 
   return {
     notifications,

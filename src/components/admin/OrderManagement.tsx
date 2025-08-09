@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
 
     fetchCustomerProfiles();
   }, [orders]);
+
   return (
     <Card>
       <CardHeader>
@@ -167,132 +169,178 @@ export const OrderManagement = ({ orders, onUpdateOrderStatus }: OrderManagement
 };
 
 function OrderItemsList({ order }: { order: Order }) {
-  const [items, setItems] = useState(order.items ?? []);
-  const [loading, setLoading] = useState(!order.items || order.items.length === 0);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
-      if (order.order_type === 'car') return;
-
-      // If items are already present (from prefetch), skip network and stop loading
-      if (items && items.length > 0) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      console.log('[OrderItemsList] Fetching items for order:', order.id);
-
-      // 1) Fetch raw order_items rows to avoid relying on FK relationship config
-      const { data: rawItems, error: itemsError } = await supabase
-        .from('order_items')
-        .select('*')
-        .eq('order_id', order.id);
-
-      if (cancelled) return;
-
-      if (itemsError) {
-        console.error('[OrderItemsList] Failed to fetch order_items for order', order.id, itemsError);
+    const loadOrderItems = async () => {
+      if (order.order_type === 'car') {
         setItems([]);
         setLoading(false);
         return;
       }
 
-      const rows = (rawItems as any[]) || [];
-      console.log('[OrderItemsList] order_items rows:', rows);
-
-      // 2) Collect product_ids and fetch product details in one go
-      const productIds = Array.from(
-        new Set(
-          rows
-            .map((r: any) => r.product_id)
-            .filter((pid: any) => typeof pid === 'string' && pid.length > 0)
-        )
-      );
-
-      let productMap: Record<string, any> = {};
-      if (productIds.length > 0) {
-        const { data: products, error: productsError } = await supabase
-          .from('products')
-          .select('id, name, type, image_url')
-          .in('id', productIds);
-
-        if (!cancelled) {
-          if (productsError) {
-            console.error('[OrderItemsList] Failed to fetch products for order', order.id, productsError);
-          } else {
-            productMap = (products || []).reduce((acc: Record<string, any>, p: any) => {
-              acc[p.id] = p;
-              return acc;
-            }, {});
-          }
-        }
-      }
-
-      // 3) Merge and map to display-friendly items
-      const mapped = rows.map((it: any) => {
-        const p = it.product_id ? productMap[it.product_id] : undefined;
-        const imageUrl = it.product_image || p?.image_url;
+      try {
+        console.log('[OrderItemsList] Loading items for order:', order.id);
         
-        return {
-          quantity: it.quantity,
-          price: it.price,
-          product_name: it.product_name || p?.name || 'Unknown Product',
-          product_type: it.product_type || p?.type || undefined,
-          product_image: imageUrl || '/placeholder.svg', // Always provide fallback
-        };
-      });
+        // Fetch order items with product details
+        const { data: orderItems, error: itemsError } = await supabase
+          .from('order_items')
+          .select(`
+            id,
+            quantity,
+            price,
+            product_id,
+            products!inner (
+              id,
+              name,
+              image_url,
+              type
+            )
+          `)
+          .eq('order_id', order.id);
 
-      setItems(mapped);
-      setLoading(false);
+        if (cancelled) return;
+
+        if (itemsError) {
+          console.error('[OrderItemsList] Error fetching order items:', itemsError);
+          // Fallback: try fetching without JOIN to avoid RLS issues
+          const { data: rawItems, error: rawError } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', order.id);
+
+          if (cancelled) return;
+
+          if (rawError) {
+            console.error('[OrderItemsList] Error fetching raw order items:', rawError);
+            setItems([]);
+            setLoading(false);
+            return;
+          }
+
+          // Get product details separately
+          const productIds = (rawItems || []).map(item => item.product_id).filter(Boolean);
+          let productMap: Record<string, any> = {};
+
+          if (productIds.length > 0) {
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, name, image_url, type')
+              .in('id', productIds);
+
+            if (products) {
+              productMap = products.reduce((acc, product) => {
+                acc[product.id] = product;
+                return acc;
+              }, {} as Record<string, any>);
+            }
+          }
+
+          const mappedItems = (rawItems || []).map(item => {
+            const product = productMap[item.product_id];
+            return {
+              id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+              product: product || {
+                name: 'Unknown Product',
+                image_url: '/placeholder.svg',
+                type: 'product'
+              }
+            };
+          });
+
+          setItems(mappedItems);
+        } else {
+          // Successfully got items with product details
+          setItems(orderItems || []);
+        }
+      } catch (error) {
+        console.error('[OrderItemsList] Unexpected error:', error);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    load();
+    loadOrderItems();
+
     return () => {
       cancelled = true;
     };
-  }, [order.id, order.order_type]); // re-run when a different order instance mounts
+  }, [order.id, order.order_type]);
 
   if (loading) {
-    return <p className="text-xs text-muted-foreground">Loading items...</p>;
+    return (
+      <div className="flex items-center justify-center py-4">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <span className="ml-2 text-sm text-muted-foreground">Loading items...</span>
+      </div>
+    );
   }
 
   if (!items || items.length === 0) {
-    return <p className="text-xs text-muted-foreground">No items found</p>;
+    return (
+      <div className="text-center py-4">
+        <p className="text-sm text-muted-foreground">No items found for this order</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-3">
-      {items.map((item: any, idx: number) => (
-        <div key={idx} className="flex items-center gap-3">
-          <img
-            src={item.product_image || 'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=50&h=50&fit=crop'}
-            alt={item.product_name || 'Product'}
-            className="w-12 h-12 object-cover rounded-md"
-            loading="lazy"
-          />
-          <div className="flex-1">
-            <p className="font-medium text-sm">{item.product_name}</p>
-            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              {item.product_type && (
-                <Badge variant="outline" className="text-xs">
-                  {item.product_type}
-                </Badge>
-              )}
-              <span>
-                Qty: {item.quantity} × {Number(item.price).toLocaleString()} MMK
-              </span>
+      {items.map((item: any, idx: number) => {
+        const product = item.products || item.product;
+        const productImage = product?.image_url || '/placeholder.svg';
+        const productName = product?.name || 'Unknown Product';
+        const productType = product?.type || 'product';
+
+        return (
+          <div key={item.id || idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+            <img
+              src={productImage}
+              alt={productName}
+              className="w-16 h-16 object-cover rounded-md flex-shrink-0 bg-white"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <p className="font-medium text-sm text-foreground line-clamp-2">
+                    {productName}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant="outline" className="text-xs">
+                      {productType}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Qty: {item.quantity}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Unit: {Number(item.price).toLocaleString()} MMK
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-semibold text-sm text-foreground">
+                    {(Number(item.price) * Number(item.quantity)).toLocaleString()} MMK
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Total
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="font-medium text-sm">
-              {(Number(item.price) * Number(item.quantity)).toLocaleString()} MMK
-            </p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

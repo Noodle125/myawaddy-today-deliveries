@@ -185,7 +185,7 @@ function OrderItemsList({ order }: { order: Order }) {
       try {
         console.log('[OrderItemsList] Loading items for order:', order.id);
         
-        // First, try to fetch order items directly
+        // First, get order items
         const { data: orderItems, error: itemsError } = await supabase
           .from('order_items')
           .select('*')
@@ -200,7 +200,7 @@ function OrderItemsList({ order }: { order: Order }) {
           return;
         }
 
-        console.log('[OrderItemsList] Found order items:', orderItems?.length || 0);
+        console.log('[OrderItemsList] Raw order items:', orderItems);
 
         if (!orderItems || orderItems.length === 0) {
           console.log('[OrderItemsList] No order items found for order:', order.id);
@@ -209,24 +209,26 @@ function OrderItemsList({ order }: { order: Order }) {
           return;
         }
 
-        // Get product details for all items
-        const productIds = orderItems.map(item => item.product_id).filter(Boolean);
+        // Get unique product IDs
+        const productIds = [...new Set(orderItems.map(item => item.product_id).filter(Boolean))];
+        console.log('[OrderItemsList] Product IDs to fetch:', productIds);
         
         if (productIds.length === 0) {
-          console.log('[OrderItemsList] No product IDs found in order items');
-          setItems(orderItems.map(item => ({
+          console.log('[OrderItemsList] No valid product IDs found');
+          const itemsWithoutProducts = orderItems.map(item => ({
             ...item,
             product: {
               name: 'Unknown Product',
               image_url: '/placeholder.svg',
               type: 'product'
             }
-          })));
+          }));
+          setItems(itemsWithoutProducts);
           setLoading(false);
           return;
         }
 
-        // Fetch product details
+        // Fetch products - simplified query to avoid RLS issues
         const { data: products, error: productsError } = await supabase
           .from('products')
           .select('id, name, image_url, type')
@@ -234,22 +236,11 @@ function OrderItemsList({ order }: { order: Order }) {
 
         if (cancelled) return;
 
+        console.log('[OrderItemsList] Products fetched:', products);
+
         if (productsError) {
           console.error('[OrderItemsList] Error fetching products:', productsError);
-          // Still show items even if products fail to load
-          setItems(orderItems.map(item => ({
-            ...item,
-            product: {
-              name: 'Unknown Product',
-              image_url: '/placeholder.svg',
-              type: 'product'
-            }
-          })));
-          setLoading(false);
-          return;
         }
-
-        console.log('[OrderItemsList] Found products:', products?.length || 0);
 
         // Create product lookup map
         const productMap = (products || []).reduce((acc, product) => {
@@ -257,15 +248,22 @@ function OrderItemsList({ order }: { order: Order }) {
           return acc;
         }, {} as Record<string, any>);
 
+        console.log('[OrderItemsList] Product map:', productMap);
+
         // Combine order items with product details
-        const itemsWithProducts = orderItems.map(item => ({
-          ...item,
-          product: productMap[item.product_id] || {
-            name: 'Unknown Product',
-            image_url: '/placeholder.svg',
-            type: 'product'
-          }
-        }));
+        const itemsWithProducts = orderItems.map(item => {
+          const product = productMap[item.product_id];
+          console.log(`[OrderItemsList] Item ${item.id} product:`, product);
+          
+          return {
+            ...item,
+            product: product || {
+              name: 'Product Not Found',
+              image_url: '/placeholder.svg',
+              type: 'product'
+            }
+          };
+        });
 
         console.log('[OrderItemsList] Final items with products:', itemsWithProducts);
         setItems(itemsWithProducts);
@@ -274,7 +272,9 @@ function OrderItemsList({ order }: { order: Order }) {
         console.error('[OrderItemsList] Unexpected error:', error);
         setItems([]);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
@@ -299,6 +299,7 @@ function OrderItemsList({ order }: { order: Order }) {
       <div className="text-center py-4">
         <p className="text-sm text-muted-foreground">No items found for this order</p>
         <p className="text-xs text-muted-foreground mt-1">Order ID: {order.id}</p>
+        <p className="text-xs text-muted-foreground">Order Type: {order.order_type}</p>
       </div>
     );
   }

@@ -305,7 +305,7 @@ function OrderItemsList({ order }: { order: Order }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {items.map((item: any, idx: number) => {
         const product = item.product;
         const productImage = product?.image_url || '/placeholder.svg';
@@ -314,43 +314,40 @@ function OrderItemsList({ order }: { order: Order }) {
 
         return (
           <div key={item.id || idx} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-            <img
-              src={productImage}
-              alt={productName}
-              className="w-16 h-16 object-cover rounded-md flex-shrink-0 bg-white"
-              loading="lazy"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder.svg';
-              }}
-            />
+            {/* Product Image - 75x75px thumbnail */}
+            <div className="relative w-[75px] h-[75px] flex-shrink-0">
+              <img
+                src={productImage}
+                alt={productName}
+                className="w-full h-full object-cover rounded-md border bg-white"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder.svg';
+                }}
+              />
+            </div>
+            
+            {/* Product Details */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <p className="font-medium text-sm text-foreground line-clamp-2">
-                    {productName}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <Badge variant="outline" className="text-xs">
-                      {productType}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Qty: {item.quantity}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Unit: {Number(item.price).toLocaleString()} MMK
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-semibold text-sm text-foreground">
-                    {(Number(item.price) * Number(item.quantity)).toLocaleString()} MMK
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Total
-                  </p>
-                </div>
+              <h5 className="font-semibold text-base mb-1 line-clamp-2">
+                {productName}
+              </h5>
+              <div className="mb-2">
+                <span className="inline-block bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                  {productType}
+                </span>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Qty: {item.quantity} Unit: {Number(item.price).toLocaleString()} MMK
+              </p>
+            </div>
+            
+            {/* Total Price */}
+            <div className="text-right flex-shrink-0">
+              <p className="font-bold text-lg text-primary">
+                {(Number(item.price) * Number(item.quantity)).toLocaleString()} MMK
+              </p>
             </div>
           </div>
         );

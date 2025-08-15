@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1735,17 +1735,17 @@ export type Database = {
       get_bot_by_token: {
         Args: { bot_token: string }
         Returns: {
-          id: string
-          user_id: string
-          bot_name: string
-          bot_type: string
-          bot_settings: Json
-          openai_key: string
-          gemini_key: string
-          deepseek_key: string
           active_ai_api: string
-          is_active: boolean
+          bot_name: string
+          bot_settings: Json
+          bot_type: string
+          deepseek_key: string
           expires_at: string
+          gemini_key: string
+          id: string
+          is_active: boolean
+          openai_key: string
+          user_id: string
         }[]
       }
       is_admin: {

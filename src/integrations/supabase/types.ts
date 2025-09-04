@@ -566,6 +566,127 @@ export type Database = {
         }
         Relationships: []
       }
+      cake_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      cake_orders: {
+        Row: {
+          cake_id: string
+          created_at: string
+          customer_name: string
+          delivery_address: string
+          id: string
+          phone_number: string
+          special_instructions: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cake_id: string
+          created_at?: string
+          customer_name: string
+          delivery_address: string
+          id?: string
+          phone_number: string
+          special_instructions?: string | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cake_id?: string
+          created_at?: string
+          customer_name?: string
+          delivery_address?: string
+          id?: string
+          phone_number?: string
+          special_instructions?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cake_orders_cake_id_fkey"
+            columns: ["cake_id"]
+            isOneToOne: false
+            referencedRelation: "cakes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cakes: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string
+          is_available: boolean
+          is_featured: boolean
+          name: string
+          price: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url: string
+          is_available?: boolean
+          is_featured?: boolean
+          name: string
+          price: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_available?: boolean
+          is_featured?: boolean
+          name?: string
+          price?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cakes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cake_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       car_orders: {
         Row: {
           created_at: string
@@ -997,6 +1118,13 @@ export type Database = {
             foreignKeyName: "menu_items_business_owner_id_fkey"
             columns: ["business_owner_id"]
             isOneToOne: false
+            referencedRelation: "business_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_business_owner_id_fkey"
+            columns: ["business_owner_id"]
+            isOneToOne: false
             referencedRelation: "business_owners"
             referencedColumns: ["id"]
           },
@@ -1037,6 +1165,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "menu_orders_business_owner_id_fkey"
+            columns: ["business_owner_id"]
+            isOneToOne: false
+            referencedRelation: "business_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "menu_orders_business_owner_id_fkey"
             columns: ["business_owner_id"]
@@ -1448,6 +1583,7 @@ export type Database = {
           id: string
           phone_number: string | null
           profile_picture_url: string | null
+          role: string
           telegram_username: string | null
           updated_at: string
           user_id: string
@@ -1458,6 +1594,7 @@ export type Database = {
           id?: string
           phone_number?: string | null
           profile_picture_url?: string | null
+          role?: string
           telegram_username?: string | null
           updated_at?: string
           user_id: string
@@ -1468,6 +1605,7 @@ export type Database = {
           id?: string
           phone_number?: string | null
           profile_picture_url?: string | null
+          role?: string
           telegram_username?: string | null
           updated_at?: string
           user_id?: string
@@ -1540,6 +1678,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_audit: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       set_holidays: {
         Row: {
@@ -1705,7 +1873,43 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      business_directory: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          id: string | null
+          logo_url: string | null
+          theme_color: string | null
+          username: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          theme_color?: string | null
+          username?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          logo_url?: string | null
+          theme_color?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      game_leaderboard: {
+        Row: {
+          games_lost: number | null
+          games_played: number | null
+          games_won: number | null
+          points: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       bulk_update_gold_prices: {

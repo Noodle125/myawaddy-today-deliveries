@@ -13,6 +13,7 @@ import { Car, MapPin, Users, Clock, Phone, MessageCircle, Calculator, CheckCircl
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Database } from '@/integrations/supabase/types';
 
 interface CarOrderForm {
   name: string;
@@ -25,19 +26,7 @@ interface CarOrderForm {
   additional_notes: string;
 }
 
-interface CarOrder {
-  id: string;
-  name: string;
-  from_location: string;
-  to_location: string;
-  trip_type: string;
-  is_city_trip: boolean;
-  people_count: number;
-  price: number;
-  status: string;
-  created_at: string;
-  telegram_username: string;
-}
+type CarOrder = Database['public']['Tables']['car_orders']['Row'];
 
 const CarOrder = () => {
   const [form, setForm] = useState<CarOrderForm>({
@@ -194,6 +183,7 @@ const CarOrder = () => {
           is_city_trip: form.is_city_trip,
           people_count: form.people_count,
           price: estimatedPrice,
+          location_type: form.is_city_trip ? 'city' : 'intercity',
           status: 'pending'
         })
         .select()

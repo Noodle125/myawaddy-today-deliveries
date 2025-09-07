@@ -692,6 +692,7 @@ export type Database = {
           created_at: string
           from_location: string
           id: string
+          is_city_trip: boolean
           location_type: string
           name: string
           people_count: number
@@ -699,6 +700,7 @@ export type Database = {
           status: string
           telegram_username: string
           to_location: string
+          trip_type: string
           updated_at: string
           user_id: string
         }
@@ -706,6 +708,7 @@ export type Database = {
           created_at?: string
           from_location: string
           id?: string
+          is_city_trip?: boolean
           location_type: string
           name: string
           people_count: number
@@ -713,6 +716,7 @@ export type Database = {
           status?: string
           telegram_username: string
           to_location: string
+          trip_type?: string
           updated_at?: string
           user_id: string
         }
@@ -720,6 +724,7 @@ export type Database = {
           created_at?: string
           from_location?: string
           id?: string
+          is_city_trip?: boolean
           location_type?: string
           name?: string
           people_count?: number
@@ -727,6 +732,7 @@ export type Database = {
           status?: string
           telegram_username?: string
           to_location?: string
+          trip_type?: string
           updated_at?: string
           user_id?: string
         }

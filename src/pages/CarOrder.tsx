@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Car, MapPin, Users, Clock, Phone, MessageCircle, Calculator, CheckCircle } from 'lucide-react';
@@ -17,7 +19,8 @@ interface CarOrderForm {
   telegram_username: string;
   from_location: string;
   to_location: string;
-  location_type: string;
+  trip_type: string; // 'one-way' or 'round-trip'
+  is_city_trip: boolean;
   people_count: number;
   additional_notes: string;
 }
@@ -27,7 +30,8 @@ interface CarOrder {
   name: string;
   from_location: string;
   to_location: string;
-  location_type: string;
+  trip_type: string;
+  is_city_trip: boolean;
   people_count: number;
   price: number;
   status: string;
@@ -41,7 +45,8 @@ const CarOrder = () => {
     telegram_username: '',
     from_location: '',
     to_location: '',
-    location_type: 'city',
+    trip_type: 'one-way',
+    is_city_trip: false,
     people_count: 1,
     additional_notes: ''
   });
@@ -83,7 +88,7 @@ const CarOrder = () => {
 
   useEffect(() => {
     calculatePrice();
-  }, [form.location_type, form.people_count, form.from_location, form.to_location]);
+  }, [form.trip_type, form.is_city_trip, form.people_count, form.from_location, form.to_location]);
 
   const fetchUserOrders = async () => {
     if (!user) return;
@@ -116,30 +121,40 @@ const CarOrder = () => {
       return;
     }
 
-    let basePrice = 0;
-    
-    // Base price by location type
-    switch (form.location_type) {
-      case 'city':
-        basePrice = 5000;
-        break;
-      case 'airport':
-        basePrice = 15000;
-        break;
-      case 'intercity':
-        basePrice = 25000;
-        break;
-      default:
-        basePrice = 5000;
+    // Check if SKK location is selected (temporarily unavailable)
+    if (form.from_location === 'SKK' || form.to_location === 'SKK') {
+      setEstimatedPrice(0);
+      return;
     }
 
-    // Additional cost per person (after first person)
-    const additionalPeopleCost = (form.people_count - 1) * 2000;
+    let totalPrice = 0;
     
-    // Distance factor (simple estimation based on location names)
-    const distanceFactor = form.location_type === 'intercity' ? 2 : 1;
+    // City Trip has priority - if checked, use City Trip pricing
+    if (form.is_city_trip) {
+      totalPrice = form.people_count * 500; // 500 B per person for city trips
+    } else {
+      // One-way Trip pricing
+      if (form.trip_type === 'one-way') {
+        if (form.people_count === 1) {
+          totalPrice = 400;
+        } else if (form.people_count === 2) {
+          totalPrice = 700;
+        } else {
+          totalPrice = form.people_count * 250; // 250 B per person for 3+ people
+        }
+      }
+      // Round Trip pricing  
+      else if (form.trip_type === 'round-trip') {
+        if (form.people_count === 1) {
+          totalPrice = 700;
+        } else if (form.people_count === 2) {
+          totalPrice = 1100;
+        } else {
+          totalPrice = form.people_count * 400; // 400 B per person for 3+ people
+        }
+      }
+    }
     
-    const totalPrice = (basePrice + additionalPeopleCost) * distanceFactor;
     setEstimatedPrice(totalPrice);
   };
 
@@ -175,7 +190,8 @@ const CarOrder = () => {
           telegram_username: form.telegram_username,
           from_location: form.from_location,
           to_location: form.to_location,
-          location_type: form.location_type,
+          trip_type: form.trip_type,
+          is_city_trip: form.is_city_trip,
           people_count: form.people_count,
           price: estimatedPrice,
           status: 'pending'
@@ -196,7 +212,8 @@ const CarOrder = () => {
         telegram_username: '',
         from_location: '',
         to_location: '',
-        location_type: 'city',
+        trip_type: 'one-way',
+        is_city_trip: false,
         people_count: 1,
         additional_notes: ''
       });
@@ -318,48 +335,99 @@ const CarOrder = () => {
                     <div className="space-y-2">
                       <Label htmlFor="from">
                         <MapPin className="h-4 w-4 inline mr-1" />
-                        From *
+                        From Location (Pick-up location) *
                       </Label>
-                      <Input
-                        id="from"
-                        placeholder="Pick-up location"
+                      <Select
                         value={form.from_location}
-                        onChange={(e) => setForm({ ...form, from_location: e.target.value })}
-                        required
-                      />
+                        onValueChange={(value) => setForm({ ...form, from_location: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select pick-up location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Myawaddy">Myawaddy</SelectItem>
+                          <SelectItem value="Wamkha">Wamkha</SelectItem>
+                          <SelectItem value="107">107</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="Min Lat Pan">Min Lat Pan</SelectItem>
+                          <SelectItem value="Mae Tha Wor Lay">Mae Tha Wor Lay</SelectItem>
+                          <SelectItem value="29 Gate">29 Gate</SelectItem>
+                          <SelectItem value="AA1">AA1</SelectItem>
+                          <SelectItem value="AA2">AA2</SelectItem>
+                          <SelectItem value="AA3">AA3</SelectItem>
+                          <SelectItem value="AA4">AA4</SelectItem>
+                          <SelectItem value="SKK">SKK (Currently Unavailable)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.from_location === 'SKK' && (
+                        <p className="text-sm text-red-500">This location is temporarily unavailable.</p>
+                      )}
                     </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor="to">
                         <MapPin className="h-4 w-4 inline mr-1" />
-                        To *
+                        To Location (Drop-off location) *
                       </Label>
-                      <Input
-                        id="to"
-                        placeholder="Drop-off location"
+                      <Select
                         value={form.to_location}
-                        onChange={(e) => setForm({ ...form, to_location: e.target.value })}
-                        required
-                      />
+                        onValueChange={(value) => setForm({ ...form, to_location: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select drop-off location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Myawaddy">Myawaddy</SelectItem>
+                          <SelectItem value="Wamkha">Wamkha</SelectItem>
+                          <SelectItem value="107">107</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                          <SelectItem value="Min Lat Pan">Min Lat Pan</SelectItem>
+                          <SelectItem value="Mae Tha Wor Lay">Mae Tha Wor Lay</SelectItem>
+                          <SelectItem value="29 Gate">29 Gate</SelectItem>
+                          <SelectItem value="AA1">AA1</SelectItem>
+                          <SelectItem value="AA2">AA2</SelectItem>
+                          <SelectItem value="AA3">AA3</SelectItem>
+                          <SelectItem value="AA4">AA4</SelectItem>
+                          <SelectItem value="SKK">SKK (Currently Unavailable)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.to_location === 'SKK' && (
+                        <p className="text-sm text-red-500">This location is temporarily unavailable.</p>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="location-type">Trip Type</Label>
-                      <Select
-                        value={form.location_type}
-                        onValueChange={(value) => setForm({ ...form, location_type: value })}
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <Label>Trip Type</Label>
+                      <RadioGroup
+                        value={form.trip_type}
+                        onValueChange={(value) => setForm({ ...form, trip_type: value })}
+                        className="flex flex-col space-y-2"
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="city">City Trip</SelectItem>
-                          <SelectItem value="airport">Airport Transfer</SelectItem>
-                          <SelectItem value="intercity">Intercity Travel</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="one-way" id="one-way" />
+                          <Label htmlFor="one-way">One-way Trip</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="round-trip" id="round-trip" />
+                          <Label htmlFor="round-trip">Round Trip</Label>
+                        </div>
+                      </RadioGroup>
+                      
+                      <div className="flex items-center space-x-2 mt-4">
+                        <Checkbox
+                          id="city-trip"
+                          checked={form.is_city_trip}
+                          onCheckedChange={(checked) => 
+                            setForm({ ...form, is_city_trip: checked as boolean })
+                          }
+                        />
+                        <Label htmlFor="city-trip">City Trip</Label>
+                        <span className="text-sm text-muted-foreground">
+                          (500 B per person - overrides trip type selection)
+                        </span>
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -375,11 +443,11 @@ const CarOrder = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {[1, 2, 3, 4, 5, 6].map(num => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num} {num === 1 ? 'person' : 'people'}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="1">1 person</SelectItem>
+                          <SelectItem value="2">2 people</SelectItem>
+                          <SelectItem value="3">3 people</SelectItem>
+                          <SelectItem value="4">4 people</SelectItem>
+                          <SelectItem value="5">5+ people</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -398,29 +466,51 @@ const CarOrder = () => {
 
                 <Separator />
 
-                {/* Price Estimation */}
-                {estimatedPrice > 0 && (
-                  <div className="bg-muted p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calculator className="h-5 w-5 text-primary" />
-                        <span className="font-semibold">Estimated Price</span>
-                      </div>
-                      <span className="text-2xl font-bold text-primary">
-                        {estimatedPrice.toLocaleString()} MMK
-                      </span>
+                {/* Price Display */}
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-6 w-6 text-primary" />
+                      <span className="text-lg font-semibold">Estimated Price</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Final price may vary based on actual distance and traffic conditions
-                    </p>
+                    <div className="text-right">
+                      {form.from_location === 'SKK' || form.to_location === 'SKK' ? (
+                        <span className="text-lg font-bold text-red-500">
+                          Location Unavailable
+                        </span>
+                      ) : estimatedPrice > 0 ? (
+                        <span className="text-3xl font-bold text-primary">
+                          {estimatedPrice} B
+                        </span>
+                      ) : (
+                        <span className="text-lg text-muted-foreground">
+                          Select locations to see price
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
+                  {estimatedPrice > 0 && !(form.from_location === 'SKK' || form.to_location === 'SKK') && (
+                    <div className="mt-3 text-sm text-muted-foreground">
+                      <div className="flex justify-between items-center">
+                        <span>
+                          {form.is_city_trip 
+                            ? `City Trip: ${form.people_count} × 500 B`
+                            : form.trip_type === 'one-way'
+                              ? `One-way Trip (${form.people_count} ${form.people_count === 1 ? 'person' : 'people'})`
+                              : `Round Trip (${form.people_count} ${form.people_count === 1 ? 'person' : 'people'})`
+                          }
+                        </span>
+                        <span className="font-medium">{estimatedPrice} B</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <Button 
                   type="submit" 
                   className="w-full btn-hero" 
                   size="lg"
-                  disabled={submitting}
+                  disabled={submitting || form.from_location === 'SKK' || form.to_location === 'SKK'}
                 >
                   {submitting ? 'Booking...' : 'Book Now'}
                 </Button>
@@ -478,7 +568,9 @@ const CarOrder = () => {
                             <Users className="h-4 w-4 inline mr-1" />
                             {order.people_count} people
                           </span>
-                          <span className="capitalize">{order.location_type} trip</span>
+                          <span className="capitalize">
+                            {order.is_city_trip ? 'City' : order.trip_type.replace('-', ' ')} trip
+                          </span>
                         </div>
                         <span className="font-semibold text-primary">
                           {order.price.toLocaleString()} MMK

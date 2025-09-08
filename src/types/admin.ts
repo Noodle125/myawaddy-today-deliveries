@@ -54,8 +54,11 @@ export interface Order {
 export interface Product {
   id: string;
   name: string;
+  description?: string;
   price: number;
   type: string;
+  image_url?: string;
+  category_id?: string;
   is_active: boolean;
   created_at: string;
 }

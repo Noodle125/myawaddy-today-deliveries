@@ -12,6 +12,7 @@ import { ProductManagement } from '@/components/admin/ProductManagement';
 import { CategoryManagement } from '@/components/admin/CategoryManagement';
 import { CodeManagement } from '@/components/admin/CodeManagement';
 import { Analytics } from '@/components/admin/Analytics';
+import { TypesManagement } from '@/components/admin/TypesManagement';
 import { NotificationSettings } from '@/components/admin/NotificationSettings';
 
 // Import custom hooks
@@ -38,7 +39,11 @@ const AdminDashboard = () => {
     generateCashbackCodes,
     toggleProductStatus,
     createCategory,
-    createProduct
+    updateCategory,
+    deleteCategory,
+    createProduct,
+    updateProduct,
+    deleteProduct
   } = useAdminActions(orders, fetchDashboardData);
 
   // Refresh dashboard data when notifications are received
@@ -86,7 +91,7 @@ const AdminDashboard = () => {
       <DashboardStats stats={stats} orders={orders} />
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Users
@@ -109,6 +114,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <FolderPlus className="h-4 w-4" />
             Categories
+          </TabsTrigger>
+          <TabsTrigger value="types" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Types
           </TabsTrigger>
           <TabsTrigger value="codes" className="flex items-center gap-2">
             <Code className="h-4 w-4" />
@@ -137,6 +146,8 @@ const AdminDashboard = () => {
             products={products} 
             categories={categories}
             onCreateProduct={createProduct}
+            onUpdateProduct={updateProduct}
+            onDeleteProduct={deleteProduct}
             onToggleProductStatus={toggleProductStatus}
           />
         </TabsContent>
@@ -145,7 +156,13 @@ const AdminDashboard = () => {
           <CategoryManagement 
             categories={categories} 
             onCreateCategory={createCategory}
+            onUpdateCategory={updateCategory}
+            onDeleteCategory={deleteCategory}
           />
+        </TabsContent>
+
+        <TabsContent value="types" className="space-y-4">
+          <TypesManagement />
         </TabsContent>
 
         <TabsContent value="codes" className="space-y-4">

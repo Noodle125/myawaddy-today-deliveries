@@ -176,6 +176,71 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
     }
   };
 
+  const updateCategory = async (id: string, name: string, type: string) => {
+    const sanitizedName = name?.trim();
+    const sanitizedType = type?.trim();
+    
+    if (!sanitizedName || sanitizedName.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a category name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: sanitizedName,
+          type: sanitizedType,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Category Updated",
+        description: "Category has been updated successfully.",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update category.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Category Deleted",
+        description: "Category has been deleted successfully.",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete category. It may be in use by existing products.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const createProduct = async (productData: any) => {
     // Enhanced input validation and sanitization
     const sanitizedData = {
@@ -262,11 +327,90 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
     }
   };
 
+  const updateProduct = async (id: string, productData: any) => {
+    const sanitizedData = {
+      name: productData.name?.trim(),
+      description: productData.description?.trim(),
+      price: productData.price ? parseFloat(productData.price) : null,
+      type: productData.type?.trim(),
+      category_id: productData.category_id,
+      image_url: productData.image_url?.trim()
+    };
+
+    if (!sanitizedData.name || sanitizedData.name.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Product name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: sanitizedData.name,
+          description: sanitizedData.description,
+          price: sanitizedData.price,
+          image_url: sanitizedData.image_url,
+          category_id: sanitizedData.category_id,
+          type: sanitizedData.type,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Product Updated",
+        description: "Product has been updated successfully.",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update product.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Product Deleted",
+        description: "Product has been deleted successfully.",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete product.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     updateOrderStatus,
     generateCashbackCodes,
     toggleProductStatus,
     createCategory,
-    createProduct
+    updateCategory,
+    deleteCategory,
+    createProduct,
+    updateProduct,
+    deleteProduct
   };
 };

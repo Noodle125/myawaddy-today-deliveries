@@ -1,36 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Product, Category } from '@/types/admin';
+import { useAdminTypes } from '@/hooks/admin/useAdminTypes';
 
 interface ProductManagementProps {
   products: Product[];
   categories: Category[];
   onCreateProduct: (product: any) => void;
+  onUpdateProduct: (id: string, product: any) => void;
+  onDeleteProduct: (id: string) => void;
   onToggleProductStatus: (productId: string, currentStatus: boolean) => void;
 }
 
 export const ProductManagement = ({ 
   products, 
   categories, 
-  onCreateProduct, 
+  onCreateProduct,
+  onUpdateProduct,
+  onDeleteProduct,
   onToggleProductStatus 
 }: ProductManagementProps) => {
+  const { types, fetchTypes } = useAdminTypes();
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
     price: '',
     image_url: '',
     category_id: '',
-    type: 'food'
+    type: ''
+  });
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    image_url: '',
+    category_id: '',
+    type: ''
   });
 
+  useEffect(() => {
+    fetchTypes();
+  }, [fetchTypes]);
+
+  useEffect(() => {
+    if (types.length > 0 && !newProduct.type) {
+      setNewProduct(prev => ({...prev, type: types[0].name}));
+    }
+  }, [types, newProduct.type]);
+
   const handleCreateProduct = () => {
+    if (!newProduct.name.trim() || !newProduct.type || !newProduct.category_id) return;
     onCreateProduct(newProduct);
     setNewProduct({
       name: '',
@@ -38,9 +68,51 @@ export const ProductManagement = ({
       price: '',
       image_url: '',
       category_id: '',
-      type: 'food'
+      type: types.length > 0 ? types[0].name : ''
     });
   };
+
+  const handleEditProduct = () => {
+    if (!selectedProduct || !editFormData.name.trim()) return;
+    onUpdateProduct(selectedProduct.id, editFormData);
+    setShowEditDialog(false);
+    setSelectedProduct(null);
+    setEditFormData({
+      name: '',
+      description: '',
+      price: '',
+      image_url: '',
+      category_id: '',
+      type: ''
+    });
+  };
+
+  const handleDeleteProduct = () => {
+    if (!selectedProduct) return;
+    onDeleteProduct(selectedProduct.id);
+    setShowDeleteDialog(false);
+    setSelectedProduct(null);
+  };
+
+  const openEditDialog = (product: Product) => {
+    setSelectedProduct(product);
+    setEditFormData({
+      name: product.name,
+      description: product.description || '',
+      price: product.price.toString(),
+      image_url: product.image_url || '',
+      category_id: product.category_id || '',
+      type: product.type
+    });
+    setShowEditDialog(true);
+  };
+
+  const openDeleteDialog = (product: Product) => {
+    setSelectedProduct(product);
+    setShowDeleteDialog(true);
+  };
+
+  const activeTypes = types.filter(type => type.is_active);
 
   return (
     <div className="space-y-4">
@@ -99,9 +171,11 @@ export const ProductManagement = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="food">Food</SelectItem>
-                  <SelectItem value="beverage">Beverage</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  {types.filter(type => type.is_active).map((type) => (
+                    <SelectItem key={type.id} value={type.name}>
+                      {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -146,6 +220,20 @@ export const ProductManagement = ({
                 <div className="flex items-center gap-2">
                   <p className="font-medium">${product.price}</p>
                   <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditDialog(product)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openDeleteDialog(product)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <Button
                     variant={product.is_active ? "default" : "secondary"}
                     size="sm"
                     onClick={() => onToggleProductStatus(product.id, product.is_active)}
@@ -158,6 +246,112 @@ export const ProductManagement = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Product Name</Label>
+                <Input
+                  placeholder="e.g., Black Coffee"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Price ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editFormData.price}
+                  onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select 
+                  value={editFormData.category_id} 
+                  onValueChange={(value) => setEditFormData({...editFormData, category_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name} ({category.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select 
+                  value={editFormData.type} 
+                  onValueChange={(value) => setEditFormData({...editFormData, type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.name}>
+                        {type.name.charAt(0).toUpperCase() + type.name.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                placeholder="Product description..."
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Image URL</Label>
+              <Input
+                placeholder="https://example.com/image.jpg"
+                value={editFormData.image_url}
+                onChange={(e) => setEditFormData({...editFormData, image_url: e.target.value})}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditProduct}>Update Product</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedProduct?.name}"? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProduct}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

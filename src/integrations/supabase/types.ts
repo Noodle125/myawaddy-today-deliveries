@@ -787,6 +787,41 @@ export type Database = {
           name?: string
           type?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "fk_categories_type"
+            columns: ["type"]
+            isOneToOne: false
+            referencedRelation: "category_types"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      category_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
         Relationships: []
       }
       comments: {
@@ -1573,6 +1608,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_products_type"
+            columns: ["type"]
+            isOneToOne: false
+            referencedRelation: "category_types"
+            referencedColumns: ["name"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]

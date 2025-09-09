@@ -55,20 +55,26 @@ export const ProductManagement = ({
 
   useEffect(() => {
     if (types.length > 0 && !newProduct.type) {
-      setNewProduct(prev => ({...prev, type: types[0].name}));
+      const firstActiveType = types.find(type => type.is_active);
+      if (firstActiveType) {
+        setNewProduct(prev => ({...prev, type: firstActiveType.name}));
+      }
     }
   }, [types, newProduct.type]);
 
   const handleCreateProduct = () => {
-    if (!newProduct.name.trim() || !newProduct.type || !newProduct.category_id) return;
+    if (!newProduct.name.trim() || !newProduct.type || !newProduct.category_id || !newProduct.price) return;
     onCreateProduct(newProduct);
+    
+    // Reset form with first active type
+    const firstActiveType = activeTypes[0];
     setNewProduct({
       name: '',
       description: '',
       price: '',
       image_url: '',
       category_id: '',
-      type: types.length > 0 ? types[0].name : ''
+      type: firstActiveType ? firstActiveType.name : ''
     });
   };
 

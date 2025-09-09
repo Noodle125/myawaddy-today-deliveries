@@ -38,7 +38,10 @@ export const CategoryManagement = ({
 
   useEffect(() => {
     if (types.length > 0 && !newCategoryType) {
-      setNewCategoryType(types[0].name);
+      const firstActiveType = types.find(type => type.is_active);
+      if (firstActiveType) {
+        setNewCategoryType(firstActiveType.name);
+      }
     }
   }, [types, newCategoryType]);
 
@@ -46,6 +49,11 @@ export const CategoryManagement = ({
     if (!newCategoryName.trim() || !newCategoryType) return;
     onCreateCategory(newCategoryName, newCategoryType);
     setNewCategoryName('');
+    // Reset type to first active type
+    const firstActiveType = activeTypes[0];
+    if (firstActiveType) {
+      setNewCategoryType(firstActiveType.name);
+    }
   };
 
   const handleEditCategory = () => {

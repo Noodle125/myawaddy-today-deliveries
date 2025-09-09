@@ -40,10 +40,12 @@ export const useAdminTypes = () => {
 
   const createType = async (name: string, description?: string) => {
     try {
+      console.log('Creating type with:', { name: name.trim(), description: description?.trim() });
+      
       const { error } = await supabase
         .from('category_types')
         .insert({
-          name: name.trim().toLowerCase(),
+          name: name.trim(),
           description: description?.trim() || null,
         });
 
@@ -67,10 +69,12 @@ export const useAdminTypes = () => {
 
   const updateType = async (id: string, name: string, description?: string) => {
     try {
+      console.log('Updating type with:', { id, name: name.trim(), description: description?.trim() });
+      
       const { error } = await supabase
         .from('category_types')
         .update({
-          name: name.trim().toLowerCase(),
+          name: name.trim(),
           description: description?.trim() || null,
         })
         .eq('id', id);

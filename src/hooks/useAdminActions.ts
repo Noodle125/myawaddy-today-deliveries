@@ -416,12 +416,18 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
 
   const deleteProduct = async (id: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Deleting product with auth user:', user?.id, 'product id:', id);
+      
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error deleting product:', error);
+        throw error;
+      }
 
       toast({
         title: "Product Deleted",
@@ -433,7 +439,7 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       console.error('Error deleting product:', error);
       toast({
         title: "Delete Failed",
-        description: "Failed to delete product.",
+        description: "Failed to delete product. Please check the console for details.",
         variant: "destructive",
       });
     }

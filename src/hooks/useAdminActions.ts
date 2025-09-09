@@ -188,8 +188,19 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       });
       return;
     }
+    
+    if (!sanitizedType || sanitizedType.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Please select a category type.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
+      console.log('Updating category:', { id, name: sanitizedName, type: sanitizedType });
+      
       const { error } = await supabase
         .from('categories')
         .update({
@@ -198,7 +209,10 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
         })
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error updating category:', error);
+        throw error;
+      }
 
       toast({
         title: "Category Updated",
@@ -210,7 +224,7 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       console.error('Error updating category:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update category.",
+        description: "Failed to update category. Please check the console for details.",
         variant: "destructive",
       });
     }
@@ -346,7 +360,27 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       return;
     }
 
+    if (!sanitizedData.type || sanitizedData.type.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Product type is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!sanitizedData.price || isNaN(sanitizedData.price) || sanitizedData.price <= 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Valid product price is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      console.log('Updating product:', { id, data: sanitizedData });
+      
       const { error } = await supabase
         .from('products')
         .update({
@@ -359,7 +393,10 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
         })
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error updating product:', error);
+        throw error;
+      }
 
       toast({
         title: "Product Updated",
@@ -371,7 +408,7 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       console.error('Error updating product:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update product.",
+        description: "Failed to update product. Please check the console for details.",
         variant: "destructive",
       });
     }

@@ -151,16 +151,18 @@ export const useNotifications = () => {
     }
   };
 
+  // Load sound setting when component mounts
+  useEffect(() => {
+    if (isAdmin) {
+      loadSoundSetting();
+    }
+  }, [isAdmin]);
+
   // Set up real-time subscription
   useEffect(() => {
     if (!user) return;
 
     fetchNotifications();
-    
-    // Load sound setting for admin users
-    if (isAdmin) {
-      loadSoundSetting();
-    }
 
     console.log('Setting up notification subscription for user:', user.id, 'isAdmin:', isAdmin);
     
@@ -187,16 +189,18 @@ export const useNotifications = () => {
           if (newNotification.type === 'order') {
             console.log('Order notification detected, playing sound and showing toast');
             
-            // Play admin's chosen sound
+            // Play admin's chosen sound - get current sound setting
             const playSound = async () => {
               try {
                 // Check if user has interacted with the page (required for autoplay)
                 if (document.visibilityState === 'visible') {
-                  if (soundSetting) {
-                    if (soundSetting.mode === 'file') {
-                      await playNotificationSoundFromFile(soundSetting.src);
+                  // Get the current sound setting directly from state
+                  const currentSoundSetting = soundSetting;
+                  if (currentSoundSetting) {
+                    if (currentSoundSetting.mode === 'file') {
+                      await playNotificationSoundFromFile(currentSoundSetting.src);
                     } else {
-                      await playNotificationPreset(soundSetting.preset);
+                      await playNotificationPreset(currentSoundSetting.preset);
                     }
                   } else {
                     // Fallback to default sound
@@ -310,7 +314,7 @@ export const useNotifications = () => {
       console.log('Cleaning up notification subscription');
       supabase.removeChannel(channel);
     };
-  }, [user, toast, isAdmin, soundSetting]);
+  }, [user, toast, isAdmin]);
 
   return {
     notifications,

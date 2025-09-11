@@ -232,16 +232,31 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
 
   const deleteCategory = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Deleting category with auth user:', user?.id, 'category id:', id);
+      
+      const { data, error } = await supabase.rpc('safe_delete_category', {
+        category_id: id
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error deleting category:', error);
+        throw error;
+      }
+
+      const result = data as any;
+      if (result && !result.success) {
+        throw new Error(result.error || 'Failed to delete category');
+      }
+
+      let description = "Category has been deleted successfully.";
+      if (result && result.products_moved > 0) {
+        description = `Category deleted. ${result.products_moved} product(s) moved to "Uncategorized".`;
+      }
 
       toast({
         title: "Category Deleted",
-        description: "Category has been deleted successfully.",
+        description,
       });
 
       fetchDashboardData();
@@ -249,7 +264,7 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       console.error('Error deleting category:', error);
       toast({
         title: "Delete Failed",
-        description: "Failed to delete category. It may be in use by existing products.",
+        description: "Failed to delete category. Please check the console for details.",
         variant: "destructive",
       });
     }
@@ -419,19 +434,28 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Deleting product with auth user:', user?.id, 'product id:', id);
       
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase.rpc('safe_delete_product', {
+        product_id: id
+      });
 
       if (error) {
         console.error('Database error deleting product:', error);
         throw error;
       }
 
+      const result = data as any;
+      if (result && !result.success) {
+        throw new Error(result.error || 'Failed to delete product');
+      }
+
+      let description = "Product has been deleted successfully.";
+      if (result && result.order_count > 0) {
+        description = `Product deleted. Order history for ${result.order_count} order(s) has been preserved.`;
+      }
+
       toast({
         title: "Product Deleted",
-        description: "Product has been deleted successfully.",
+        description,
       });
 
       fetchDashboardData();

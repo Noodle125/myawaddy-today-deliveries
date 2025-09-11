@@ -155,6 +155,7 @@ const AdminDashboard = () => {
         <TabsContent value="categories" className="space-y-4">
           <CategoryManagement 
             categories={categories} 
+            products={products}
             onCreateCategory={createCategory}
             onUpdateCategory={updateCategory}
             onDeleteCategory={deleteCategory}

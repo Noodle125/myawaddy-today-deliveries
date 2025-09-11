@@ -93,11 +93,22 @@ export const ProductManagement = ({
     });
   };
 
-  const handleDeleteProduct = () => {
-    if (!selectedProduct) return;
-    onDeleteProduct(selectedProduct.id);
-    setShowDeleteDialog(false);
-    setSelectedProduct(null);
+  const handleDeleteProduct = async () => {
+    if (selectedProduct) {
+      // Show confirmation with product details
+      const confirmed = window.confirm(
+        `Are you sure you want to delete "${selectedProduct.name}"? This action cannot be undone. If this product has been ordered before, the order history will be preserved.`
+      );
+      
+      if (!confirmed) {
+        setShowDeleteDialog(false);
+        return;
+      }
+      
+      onDeleteProduct(selectedProduct.id);
+      setSelectedProduct(null);
+      setShowDeleteDialog(false);
+    }
   };
 
   const openEditDialog = (product: Product) => {

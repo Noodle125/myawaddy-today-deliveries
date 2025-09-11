@@ -8,11 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { Category } from '@/types/admin';
+import { Category, Product } from '@/types/admin';
 import { useAdminTypes } from '@/hooks/admin/useAdminTypes';
 
 interface CategoryManagementProps {
   categories: Category[];
+  products?: Product[];
   onCreateCategory: (name: string, type: string) => void;
   onUpdateCategory: (id: string, name: string, type: string) => void;
   onDeleteCategory: (id: string) => void;
@@ -20,6 +21,7 @@ interface CategoryManagementProps {
 
 export const CategoryManagement = ({ 
   categories, 
+  products,
   onCreateCategory, 
   onUpdateCategory, 
   onDeleteCategory 
@@ -64,11 +66,27 @@ export const CategoryManagement = ({
     setEditFormData({ name: '', type: '' });
   };
 
-  const handleDeleteCategory = () => {
-    if (!selectedCategory) return;
-    onDeleteCategory(selectedCategory.id);
-    setShowDeleteDialog(false);
-    setSelectedCategory(null);
+  const handleDeleteCategory = async () => {
+    if (selectedCategory) {
+      // Check if category has products
+      const hasProducts = products?.some(product => product.category_id === selectedCategory.id);
+      
+      if (hasProducts) {
+        const productCount = products?.filter(product => product.category_id === selectedCategory.id).length || 0;
+        // Show additional confirmation
+        const confirmed = window.confirm(
+          `This category contains ${productCount} product(s). These products will be moved to "Uncategorized" before deleting the category. Continue?`
+        );
+        if (!confirmed) {
+          setShowDeleteDialog(false);
+          return;
+        }
+      }
+      
+      onDeleteCategory(selectedCategory.id);
+      setSelectedCategory(null);
+      setShowDeleteDialog(false);
+    }
   };
 
   const openEditDialog = (category: Category) => {

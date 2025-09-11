@@ -2008,6 +2008,14 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: boolean
       }
+      safe_delete_category: {
+        Args: { category_id: string }
+        Returns: Json
+      }
+      safe_delete_product: {
+        Args: { product_id: string }
+        Returns: Json
+      }
       should_inject_ads: {
         Args: { user_uuid: string }
         Returns: boolean

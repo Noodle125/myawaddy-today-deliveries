@@ -9,7 +9,13 @@ export const useAdminCategories = () => {
     try {
       const categoriesResult = await supabase
         .from('categories')
-        .select('*')
+        .select(`
+          *,
+          category_types!fk_categories_category_type_id(
+            id,
+            name
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (categoriesResult.error) throw categoriesResult.error;

@@ -770,24 +770,34 @@ export type Database = {
       }
       categories: {
         Row: {
+          category_type_id: string | null
           created_at: string
           id: string
           name: string
           type: string
         }
         Insert: {
+          category_type_id?: string | null
           created_at?: string
           id?: string
           name: string
           type: string
         }
         Update: {
+          category_type_id?: string | null
           created_at?: string
           id?: string
           name?: string
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_categories_category_type_id"
+            columns: ["category_type_id"]
+            isOneToOne: false
+            referencedRelation: "category_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_categories_type"
             columns: ["type"]
@@ -1609,6 +1619,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_products_category_id"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_products_type"
             columns: ["type"]
             isOneToOne: false
@@ -2009,11 +2026,15 @@ export type Database = {
         Returns: boolean
       }
       safe_delete_category: {
-        Args: { category_id: string }
+        Args: { cat_id: string }
+        Returns: Json
+      }
+      safe_delete_category_type: {
+        Args: { type_id: string }
         Returns: Json
       }
       safe_delete_product: {
-        Args: { product_id: string }
+        Args: { prod_id: string }
         Returns: Json
       }
       should_inject_ads: {

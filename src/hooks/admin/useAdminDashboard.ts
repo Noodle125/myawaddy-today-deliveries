@@ -6,6 +6,7 @@ import { useAdminOrders } from './useAdminOrders';
 import { useAdminProducts } from './useAdminProducts';
 import { useAdminCodes } from './useAdminCodes';
 import { useAdminCategories } from './useAdminCategories';
+import { useAdminTypes } from './useAdminTypes';
 
 export const useAdminDashboard = (user: any, isAdmin: boolean) => {
   const [loading, setLoading] = useState(true);
@@ -16,6 +17,7 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
   const { products, fetchProducts } = useAdminProducts();
   const { codes, fetchCodes } = useAdminCodes();
   const { categories, fetchCategories } = useAdminCategories();
+  const { types, fetchTypes } = useAdminTypes();
 
   const fetchDashboardData = useCallback(async (retries = 3) => {
     if (!user || !isAdmin) {
@@ -33,7 +35,8 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
         fetchOrders(),
         fetchProducts(),
         fetchCodes(),
-        fetchCategories()
+        fetchCategories(),
+        fetchTypes()
       ]);
       
       console.log('Dashboard data fetched successfully');
@@ -51,7 +54,7 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin, fetchStats, fetchUsers, fetchOrders, fetchProducts, fetchCodes, fetchCategories]);
+  }, [user, isAdmin, fetchStats, fetchUsers, fetchOrders, fetchProducts, fetchCodes, fetchCategories, fetchTypes]);
 
   useEffect(() => {
     if (user && isAdmin) {
@@ -87,6 +90,7 @@ export const useAdminDashboard = (user: any, isAdmin: boolean) => {
     products,
     codes,
     categories,
+    types,
     loading,
     fetchDashboardData
   };

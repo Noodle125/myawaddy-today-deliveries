@@ -5,6 +5,157 @@ import { Order } from '@/types/admin';
 export const useAdminActions = (orders: Order[], fetchDashboardData: () => void) => {
   const { toast } = useToast();
 
+  // ========== TYPE MANAGEMENT ==========
+  const createType = async (name: string, description?: string) => {
+    const sanitizedName = name?.trim();
+    const sanitizedDescription = description?.trim();
+    
+    if (!sanitizedName || sanitizedName.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a type name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (sanitizedName.length > 100) {
+      toast({
+        title: "Invalid Input",
+        description: "Type name must be less than 100 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('category_types')
+        .insert({
+          name: sanitizedName,
+          description: sanitizedDescription || null,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Type Created",
+        description: `Category type "${sanitizedName}" has been created successfully.`,
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error creating category type:', error);
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create category type.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateType = async (id: string, name: string, description?: string) => {
+    const sanitizedName = name?.trim();
+    const sanitizedDescription = description?.trim();
+    
+    if (!sanitizedName || sanitizedName.length === 0) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter a type name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('category_types')
+        .update({
+          name: sanitizedName,
+          description: sanitizedDescription || null,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Type Updated",
+        description: "Category type has been updated successfully.",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating category type:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update category type.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleTypeStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('category_types')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Type Updated",
+        description: "Category type status has been updated successfully.",
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating category type status:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update category type status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteType = async (id: string) => {
+    try {
+      const { data, error } = await supabase.rpc('safe_delete_category_type', {
+        type_id: id
+      });
+
+      if (error) {
+        console.error('Database error deleting category type:', error);
+        throw error;
+      }
+
+      const result = data as any;
+      if (result && !result.success) {
+        throw new Error(result.error || 'Failed to delete category type');
+      }
+
+      let description = "Category type has been deleted successfully.";
+      if (result && (result.categories_moved > 0 || result.products_moved > 0)) {
+        description = `Type deleted. ${result.categories_moved} categor${result.categories_moved === 1 ? 'y' : 'ies'} and ${result.products_moved} product(s) moved to "General" type.`;
+      }
+
+      toast({
+        title: "Type Deleted",
+        description,
+      });
+
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error deleting category type:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete category type. It may be in use by existing categories or products.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       // Find the order to determine if it's a car order or regular order
@@ -236,7 +387,7 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       console.log('Deleting category with auth user:', user?.id, 'category id:', id);
       
       const { data, error } = await supabase.rpc('safe_delete_category', {
-        category_id: id
+        cat_id: id
       });
 
       if (error) {
@@ -435,7 +586,7 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
       console.log('Deleting product with auth user:', user?.id, 'product id:', id);
       
       const { data, error } = await supabase.rpc('safe_delete_product', {
-        product_id: id
+        prod_id: id
       });
 
       if (error) {
@@ -473,6 +624,10 @@ export const useAdminActions = (orders: Order[], fetchDashboardData: () => void)
     updateOrderStatus,
     generateCashbackCodes,
     toggleProductStatus,
+    createType,
+    updateType,
+    toggleTypeStatus,
+    deleteType,
     createCategory,
     updateCategory,
     deleteCategory,

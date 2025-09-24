@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,40 +8,62 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { useAdminTypes, CategoryType } from '@/hooks/admin/useAdminTypes';
+import { CategoryType } from '@/types/admin';
 
-export const TypesManagement = () => {
-  const { types, loading, fetchTypes, createType, updateType, toggleTypeStatus, deleteType } = useAdminTypes();
+interface TypesManagementProps {
+  types: CategoryType[];
+  onCreateType: (name: string, description?: string) => Promise<void>;
+  onUpdateType: (id: string, name: string, description?: string) => Promise<void>;
+  onToggleTypeStatus: (id: string, currentStatus: boolean) => Promise<void>;
+  onDeleteType: (id: string) => Promise<void>;
+}
+
+export const TypesManagement = ({ 
+  types, 
+  onCreateType, 
+  onUpdateType, 
+  onToggleTypeStatus, 
+  onDeleteType 
+}: TypesManagementProps) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedType, setSelectedType] = useState<CategoryType | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
-  useEffect(() => {
-    fetchTypes();
-  }, [fetchTypes]);
 
   const handleCreate = async () => {
     if (!formData.name.trim()) return;
-    await createType(formData.name, formData.description);
-    setShowCreateDialog(false);
-    setFormData({ name: '', description: '' });
+    try {
+      await onCreateType(formData.name, formData.description);
+      setFormData({ name: '', description: '' });
+      setShowCreateDialog(false);
+    } catch (error) {
+      console.error('Error creating type:', error);
+    }
   };
 
   const handleEdit = async () => {
     if (!selectedType || !formData.name.trim()) return;
-    await updateType(selectedType.id, formData.name, formData.description);
-    setShowEditDialog(false);
-    setSelectedType(null);
-    setFormData({ name: '', description: '' });
+    try {
+      await onUpdateType(selectedType.id, formData.name, formData.description);
+      setShowEditDialog(false);
+      setSelectedType(null);
+      setFormData({ name: '', description: '' });
+    } catch (error) {
+      console.error('Error updating type:', error);
+    }
   };
 
   const handleDelete = async () => {
     if (!selectedType) return;
-    await deleteType(selectedType.id);
-    setShowDeleteDialog(false);
-    setSelectedType(null);
+    try {
+      await onDeleteType(selectedType.id);
+      setShowDeleteDialog(false);
+      setSelectedType(null);
+    } catch (error) {
+      console.error('Error deleting type:', error);
+    }
   };
 
   const openEditDialog = (type: CategoryType) => {
@@ -68,52 +90,48 @@ export const TypesManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="text-center py-4">Loading types...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {types.map((type) => (
-                <div key={type.id} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium capitalize">{type.name}</h3>
-                    <Badge variant={type.is_active ? "default" : "secondary"}>
-                      {type.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  {type.description && (
-                    <p className="text-sm text-muted-foreground mb-3">{type.description}</p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleTypeStatus(type.id, type.is_active)}
-                    >
-                      {type.is_active ? (
-                        <ToggleRight className="h-4 w-4" />
-                      ) : (
-                        <ToggleLeft className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(type)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDeleteDialog(type)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {types.map((type) => (
+              <div key={type.id} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium capitalize">{type.name}</h3>
+                  <Badge variant={type.is_active ? "default" : "secondary"}>
+                    {type.is_active ? "Active" : "Inactive"}
+                  </Badge>
                 </div>
-              ))}
-            </div>
-          )}
+                {type.description && (
+                  <p className="text-sm text-muted-foreground mb-3">{type.description}</p>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onToggleTypeStatus(type.id, type.is_active)}
+                  >
+                    {type.is_active ? (
+                      <ToggleRight className="h-4 w-4" />
+                    ) : (
+                      <ToggleLeft className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditDialog(type)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openDeleteDialog(type)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

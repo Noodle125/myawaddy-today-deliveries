@@ -30,6 +30,7 @@ const AdminDashboard = () => {
     products, 
     codes, 
     categories, 
+    types,
     loading, 
     fetchDashboardData 
   } = useAdminDashboard(user, isAdmin);
@@ -38,6 +39,10 @@ const AdminDashboard = () => {
     updateOrderStatus,
     generateCashbackCodes,
     toggleProductStatus,
+    createType,
+    updateType,
+    toggleTypeStatus,
+    deleteType,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -163,7 +168,13 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="types" className="space-y-4">
-          <TypesManagement />
+          <TypesManagement 
+            types={types}
+            onCreateType={createType}
+            onUpdateType={updateType}
+            onToggleTypeStatus={toggleTypeStatus}
+            onDeleteType={deleteType}
+          />
         </TabsContent>
 
         <TabsContent value="codes" className="space-y-4">

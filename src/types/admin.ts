@@ -75,5 +75,19 @@ export interface Category {
   id: string;
   name: string;
   type: string;
+  category_type_id?: string;
+  category_types?: {
+    id: string;
+    name: string;
+  };
   created_at: string;
+}
+
+export interface CategoryType {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
